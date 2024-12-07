@@ -1,0 +1,95 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeBehind="HeaderHome.master.cs" Inherits="API_DAMs.UI.HeaderHome"  %>
+
+<!DOCTYPE html>
+<html>
+<head runat="server">
+    <title></title>
+    <!--bootstrap css-->
+    <link href="../bootstrap/css/bootstrap.min.css" rel="stylesheet" />
+    <!--datatables css-->
+    <link href="../datatables/css/dataTables.dataTables.min.css" rel="stylesheet" />
+    <!--fontawesome css-->
+    <link href="../fontawesome/css/all.css" rel="stylesheet" />
+    <!--custom css-->
+    <%--<link href="CSS/HomeBody.css" rel="stylesheet" />--%>
+    
+    
+    <link href="CSS/HomePage.css" rel="stylesheet" />
+
+    <!--jquery--> 
+    <script src="../bootstrap/js/jquery-3.7.1.min.js"></script>
+    <!--popper js-->
+    <script src="../bootstrap/js/popper.min.js"></script>
+    <!--bootstrap js-->
+    <script src="../bootstrap/js/bootstrap.bundle.min.js"></script>
+
+
+    <asp:ContentPlaceHolder ID="head" runat="server">
+    </asp:ContentPlaceHolder>
+</head>
+<body>
+    
+    <form runat="server">
+        <header>
+            <nav>
+                <div class="wrapper" style="padding: 50px 0">
+                    <div class="logo">
+                        <a href="HomePage.aspx"><img src="../images/api_logo.png" width="50" height="50"/>API DAMs</a>
+                    </div>
+                    <input type="radio" name="slider" id="menu-btn">
+                    <input type="radio" name="slider" id="close-btn">
+                    <ul class="nav-links">
+                        <label for="close-btn" class="btn close-btn"><i class="fas fa-times"></i></label>
+                        <li><a href="HomePage.aspx">Home</a></li>
+                        <li><a href="DocumentationPage.aspx">Documentation</a></li>
+                        <li>
+                            <a href="viewAPI.aspx" class="desktop-item">View API</a>
+                        </li>
+                        <li>
+                            <a href="#" class="desktop-item out">
+                                <img width="30" height="30" src="../icon/default-profile.png" />
+                                Hi, <asp:Literal ID="litUsername" runat="server"></asp:Literal>
+                            </a>
+                            <%--<input type="checkbox" id="showDrop">--%>
+                            <label for="showDrop" class="mobile-item">Dropdown Menu</label>
+                            <ul class="drop-menu">
+                                <li>
+                                    <asp:LinkButton ID="lnkProfileSetting" runat="server" CssClass="dropdown-item" OnClick="ProfileSetting_Click">
+                                        Profile Setting
+                                    </asp:LinkButton>
+                                </li>
+                                <li>
+                                    <asp:LinkButton ID="lnkLogout" runat="server" CssClass="dropdown-item" 
+                                        OnClientClick="return confirm('Are you sure you want to log out?');" 
+                                        OnClick="Logout_Click">
+                                        Log Out
+                                    </asp:LinkButton>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <label for="menu-btn" class="btn menu-btn"><i class="fas fa-bars"></i></label>
+                </div>
+            </nav>
+        </header>
+
+        <div>
+            <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server">
+            </asp:ContentPlaceHolder>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <div id="footer2" class="container-fluid">
+                <div class="row">
+                    <div class="col-xs-12 col-sm-12 col-md-12 text-center">
+                        <p style="color: whitesmoke">&copy All right Reversed. <a
+                        class="footerlinks" href="landingPage.aspx" target="_blank">API DAMs</a></p>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </form>
+    <script src="JS/HomePage.js"></script>
+</body>
+</html>
