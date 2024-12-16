@@ -117,8 +117,6 @@ namespace API_DAMs.UI
             return userId;
         }
 
-
-
         private void RecreateControls()
         {
             if (Session["GlobalParameterControlList"] is List<ParameterControlData> savedList)
@@ -196,7 +194,6 @@ namespace API_DAMs.UI
         {
             ExtractParameterValues();
             //System.Diagnostics.Debug.WriteLine($"List count on postback: {globalParameterControlList.Count}");
-
         }
 
         private void DynamicCodeText()
@@ -239,20 +236,37 @@ namespace API_DAMs.UI
 
                         if (parameterCount >= 0 && !deletedPanels.Contains(i.ToString()))
                         {
-                            // Check if method name already exists in the database
-                            string checkApiQuery = "SELECT COUNT(*) FROM api_methods WHERE API_Name = @API_Name";
+                            // Retrieve user ID from the session
+                            if (Session["UserId"] == null)
+                            {
+                                // Redirect to login page if the session is invalid
+                                Response.Redirect("~/UI/SignInPage.aspx");
+                                return;
+                            }
+
+                            int userId = Convert.ToInt32(Session["UserId"]);
+                            // Check if method name already exists in the database for the current user
+                            string checkApiQuery = @"
+                                SELECT COUNT(*)
+                                FROM api_methods am
+                                JOIN api_header ah ON am.code_id = ah.code_id
+                                WHERE am.API_Name = @API_Name AND ah.user_id = @UserId";
+
                             using (SqlCommand checkApiCommand = new SqlCommand(checkApiQuery, connection))
                             {
                                 checkApiCommand.Parameters.AddWithValue("@API_Name", methodName);
+                                checkApiCommand.Parameters.AddWithValue("@UserId", userId); // Include user ID in the query
+
                                 int count = (int)checkApiCommand.ExecuteScalar();
 
                                 if (count > 0)
                                 {
                                     // Show confirmation popup if method already exists (but don't break the loop)
-                                    string script = $"confirm('The API method already exists: {methodName}. Do you want to proceed?');";
+                                    string script = $"confirm('The API method already exists for the current user: {methodName}. Do you want to proceed?');";
                                     ScriptManager.RegisterStartupScript(this, GetType(), "confirmMessage", script, true);
                                 }
                             }
+
 
                             panelCreated = true;
                             methodIndices.Add(i);
@@ -710,7 +724,6 @@ namespace API_DAMs.UI
             container.Controls.Add(new Literal { Text = "</div>" }); // Close the flex-container div
         }
 
-
         protected void ParamTypeDropDown_SelectedIndexChanged(object sender, EventArgs e)
         {
             DropDownList paramTypeDropDown = sender as DropDownList;
@@ -1102,20 +1115,24 @@ namespace API_DAMs.UI
                         {
                             // Extract method details from the panel
                             string methodName = ((TextBox)panel.FindControl($"method_name_{panel.ID.Split('_')[2]}")).Text;
-                            string checkApiQuery = "SELECT COUNT(*) FROM api_methods WHERE API_Name = @API_Name";
+                            string checkApiQuery = "SELECT COUNT(*) FROM api_methods am JOIN api_header ah ON am.code_id = ah.code_id WHERE am.API_Name = @API_Name AND ah.user_id = @UserId";
+
                             using (SqlCommand checkApiCommand = new SqlCommand(checkApiQuery, connection))
                             {
                                 checkApiCommand.Parameters.AddWithValue("@API_Name", methodName);
+                                checkApiCommand.Parameters.AddWithValue("@UserId", userId); // Include user ID in the query
+
                                 int count = (int)checkApiCommand.ExecuteScalar();
 
-                                if (count > 0)
-                                {
-                                    // Show confirmation popup if method already exists
-                                    string script = $"if (!confirm('The API method already exists: {methodName}. Are you sure you want to save it again?')) {{ return false; }}";
-                                    ScriptManager.RegisterStartupScript(this, GetType(), "confirmMessage", script, true);
-                                    break;
-                                }
+                                //if (count > 0)
+                                //{
+                                //    // Show confirmation popup if method already exists for the current user
+                                //    string script = $"if (!confirm('The API method already exists for the current user: {methodName}. Are you sure you want to save it again?')) {{ return false; }}";
+                                //    ScriptManager.RegisterStartupScript(this, GetType(), "confirmMessage", script, true);
+                                //    break;
+                                //}
                             }
+
                             string descriptionText = ((TextBox)panel.FindControl($"description_{panel.ID.Split('_')[2]}")).Text;
                             string apiEndpointText = ((TextBox)panel.FindControl($"api_endpoint_{panel.ID.Split('_')[2]}")).Text;
                             string httpMethod = ((DropDownList)panel.FindControl($"http_method_{panel.ID.Split('_')[2]}")).SelectedValue;

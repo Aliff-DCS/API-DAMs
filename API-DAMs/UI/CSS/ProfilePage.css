@@ -12,6 +12,11 @@ body {
     background: #fff;
 }
 
+#imagePreview{
+    border:2px solid black;
+    border-radius:5px;
+}
+
 .profile-img {
     text-align: center;
 }

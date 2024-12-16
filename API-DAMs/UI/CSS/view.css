@@ -10,6 +10,10 @@
     background-color: lightseagreen;
 }
 
+.imgProfile {
+    border-radius: 100%;
+}
+
 #example-wrapper{
     background-color:white;
 }

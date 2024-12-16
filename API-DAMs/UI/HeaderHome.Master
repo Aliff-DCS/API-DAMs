@@ -46,11 +46,13 @@
                             <a href="viewAPI.aspx" class="desktop-item">View API</a>
                         </li>
                         <li>
+                            <a href="CollaboratorPage.aspx" class="desktop-item">Collaborator</a>
+                        </li>
+                        <li>
                             <a href="#" class="desktop-item out">
-                                <img width="30" height="30" src="../icon/default-profile.png" />
+                                <img id="imgProfile" runat="server" width="50" height="50" />
                                 Hi, <asp:Literal ID="litUsername" runat="server"></asp:Literal>
                             </a>
-                            <%--<input type="checkbox" id="showDrop">--%>
                             <label for="showDrop" class="mobile-item">Dropdown Menu</label>
                             <ul class="drop-menu">
                                 <li>
@@ -67,6 +69,7 @@
                                 </li>
                             </ul>
                         </li>
+
                     </ul>
                     <label for="menu-btn" class="btn menu-btn"><i class="fas fa-bars"></i></label>
                 </div>

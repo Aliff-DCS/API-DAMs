@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
@@ -33,7 +35,7 @@ namespace API_DAMs.UI
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = "SELECT user_id, user_username, user_email, user_phone, user_name, user_image, user_joined_date FROM users WHERE user_username = @Username";
+                string query = "SELECT user_id, user_username, user_email, user_phone, user_name, user_image, user_joined_date, user_visibility FROM users WHERE user_username = @Username";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
@@ -51,57 +53,49 @@ namespace API_DAMs.UI
                         litPhone.Text = reader["user_phone"].ToString();
                         litJD.Text = reader["user_joined_date"].ToString();
 
+                        // Map user_visibility BIT value to "Public" or "Private"
+                        bool isPublic = Convert.ToBoolean(reader["user_visibility"]);
+                        LitVisibility.Text = isPublic ? "Public" : "Private";
+
                         // Assign the profile image source
                         if (reader["user_image"] != DBNull.Value && !string.IsNullOrEmpty(reader["user_image"].ToString()))
                         {
-                            // If user_image is not null or empty, use the value
                             string imagePath = reader["user_image"].ToString();
                             litImage.Text = $"<img src='{ResolveUrl(imagePath)}' alt='Profile Image' />";
                         }
                         else
                         {
-                            // If user_image is null or empty, set a default image
                             string defaultImagePath = "~/icon/default-profile.png";
                             litImage.Text = $"<img src='{ResolveUrl(defaultImagePath)}' alt='Default Profile Image' />";
                         }
-
                     }
                 }
             }
         }
 
-        protected void btnAddMore_Click(object sender, EventArgs e)
-        {
-            // Populate textboxes with the current data
-            txtID.Text = litID.Text;
-            txtName.Text = litName.Text;
-            txtEmail.Text = litEmail.Text;
-            txtPhone.Text = litPhone.Text;
-
-            // Toggle panels
-            pnlViewMode.Visible = false;
-            pnlEditMode.Visible = true;
-        }
 
         protected void btnSubmitEdit_Click(object sender, EventArgs e)
         {
-            // Update the database with new values
             string username = Session["User"].ToString();
             string name = txtName.Text;
             string email = txtEmail.Text;
             string phone = txtPhone.Text;
 
+            // Get the selected visibility value
+            bool isPublic = rblVisibility.SelectedValue == "Public";
+
             string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = "UPDATE users SET user_name = @Name, user_email = @Email, user_phone = @Phone WHERE user_username = @Username";
+                string query = "UPDATE users SET user_name = @Name, user_email = @Email, user_phone = @Phone, user_visibility = @Visibility WHERE user_username = @Username";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Name", name);
                     command.Parameters.AddWithValue("@Email", email);
                     command.Parameters.AddWithValue("@Phone", phone);
+                    command.Parameters.AddWithValue("@Visibility", isPublic); // Pass boolean for BIT column
                     command.Parameters.AddWithValue("@Username", username);
 
                     connection.Open();
@@ -117,6 +111,7 @@ namespace API_DAMs.UI
             pnlEditMode.Visible = false;
         }
 
+
         protected void btnEditProfile_Click(object sender, EventArgs e)
         {
             // Populate textboxes with the current data
@@ -124,6 +119,10 @@ namespace API_DAMs.UI
             txtName.Text = litName.Text;
             txtEmail.Text = litEmail.Text;
             txtPhone.Text = litPhone.Text;
+
+            // Set the selected value of the RadioButtonList
+            bool isPublic = LitVisibility.Text == "Public";
+            rblVisibility.SelectedValue = isPublic ? "Public" : "Private";
 
             // Toggle panels
             pnlViewMode.Visible = false;
@@ -190,7 +189,7 @@ namespace API_DAMs.UI
         protected void btnCancel_Click(object sender, EventArgs e)
         {
             // Cancel the image change and reload the current profile data
-            string username = Session["User"].ToString(); 
+            string username = Session["User"].ToString();
             LoadUserProfile(username);
 
             // Optionally, hide the preview and buttons again     
@@ -215,6 +214,5 @@ namespace API_DAMs.UI
                 }
             }
         }
-
     }
 }

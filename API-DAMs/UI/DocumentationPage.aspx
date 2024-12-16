@@ -6,7 +6,7 @@
     <link href="CSS/Documentation.css" rel="stylesheet" />
 
     <div class="container nav-spacer">
-            <h5 class="text-center ">API Documentation</h5>
+            <h2 class="text-center ">API Documentation</h2>
             <div id="text-field" class="form-group">
                 <label for="SC_text">Insert your code here:</label>
                 <asp:TextBox ID="SC_text" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="20" Columns="50"></asp:TextBox>

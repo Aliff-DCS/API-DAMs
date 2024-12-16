@@ -30,12 +30,13 @@ namespace API_DAMs.UI
 
             try
             {
-                string username = ValidateUserAndGetUsername(emailOrUsername, password);
+                var userInfo = ValidateUserAndGetUserInfo(emailOrUsername, password);
 
-                if (!string.IsNullOrEmpty(username))
+                if (userInfo != null)
                 {
-                    // Set session to always store the username
-                    Session["User"] = username;
+                    // Set session to store user ID and username
+                    Session["UserID"] = userInfo.Item1; // User ID
+                    Session["User"] = userInfo.Item2; // Username
                     Session.Timeout = 30; // Optional: session timeout in minutes
 
                     // Redirect to a dashboard or landing page after login
@@ -53,8 +54,7 @@ namespace API_DAMs.UI
             }
         }
 
-
-        private string ValidateUserAndGetUsername(string emailOrUsername, string password)
+        private Tuple<int, string> ValidateUserAndGetUserInfo(string emailOrUsername, string password)
         {
             // Hash the input password
             string hashedPassword = HashPassword(password);
@@ -65,10 +65,10 @@ namespace API_DAMs.UI
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 string query = @"
-            SELECT user_username 
-            FROM users 
-            WHERE (user_email = @EmailOrUsername OR user_username = @EmailOrUsername) 
-              AND user_password = @Password";
+                SELECT user_id, user_username 
+                FROM users 
+                WHERE (user_email = @EmailOrUsername OR user_username = @EmailOrUsername) 
+                  AND user_password = @Password";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
@@ -78,14 +78,25 @@ namespace API_DAMs.UI
 
                     connection.Open();
 
-                    // Retrieve the username if the user exists
-                    object result = command.ExecuteScalar();
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            // Read user ID and username from the query result
+                            int userId = reader.GetInt32(0);
+                            string username = reader.GetString(1);
 
-                    // Return the username or null if no match found
-                    return result != null ? result.ToString() : null;
+                            return Tuple.Create(userId, username);
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
                 }
             }
         }
+
 
 
         private string HashPassword(string password)

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
+using System.Data.Entity.Core.Common.CommandTrees;
 
 namespace API_DAMs.UI
 {
@@ -16,55 +17,59 @@ namespace API_DAMs.UI
         {
             if (!IsPostBack)
             {
-                LoadAllAPIs();
+                if (Session["User"] != null)
+                {
+                    LoadAllAPIs();
+                }
+                else
+                {
+                    Response.Redirect("~/UI/SignInPage.aspx");
+                }
             }
         }
 
-        protected void btnSearch_Click(object sender, EventArgs e)
-        {
-            string apiName = "";//txtMethodName.Text.Trim();
 
-            // Store the search term in ViewState for sorting
-            ViewState["SearchTerm"] = apiName;
-
-            if (!string.IsNullOrEmpty(apiName))
-            {
-                LoadAPIs(apiName);  // Perform the search
-            }
-            else
-            {
-                LoadAllAPIs();  // Load all APIs if no search term
-            }
-        }
-
-        private void LoadAPIs(string apiName, string sortExpression = "code_uploadDate DESC")
+        private void LoadAllAPIs()
         {
             string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
 
-            // Ensure only safe sorting columns are allowed
-            string safeSortExpression = GetSafeSortExpression(sortExpression);
+            // Retrieve logged-in user's username from session
+            string username = Session["User"]?.ToString();
+            if (string.IsNullOrEmpty(username))
+            {
+                Response.Redirect("~/UI/SignInPage.aspx");
+                return;
+            }
+
+            // Fetch the user_id for the logged-in username
+            int userId = GetUserIdByUsername(username);
+            if (userId == 0)
+            {
+                // Handle case where user ID is not found
+                //lblError.Text = "Unable to load user data.";
+                return;
+            }
 
             string query = $@"
-                SELECT 
-                    am.API_id, 
-                    am.API_name, 
-                    am.API_desc, 
-                    ah.code_uploadDate, 
-                    am.API_endpoint, 
-                    am.API_HTTP_method
-                FROM 
-                    api_methods am
-                JOIN 
-                    api_header ah ON am.code_id = ah.code_id
-                WHERE 
-                    am.API_name LIKE @APIName 
-                ORDER BY {safeSortExpression};";
+        SELECT 
+            am.API_id, 
+            am.API_name, 
+            am.API_desc, 
+            ah.code_uploadDate, 
+            am.API_endpoint, 
+            am.API_HTTP_method
+        FROM 
+            api_methods am
+        JOIN 
+            api_header ah ON am.code_id = ah.code_id
+        WHERE 
+            ah.user_id = @UserId;";
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@APIName", "%" + apiName + "%");
+                    cmd.Parameters.AddWithValue("@UserId", userId);
 
                     SqlDataAdapter da = new SqlDataAdapter(cmd);
                     DataTable dt = new DataTable();
@@ -74,6 +79,31 @@ namespace API_DAMs.UI
                     rptResults.DataBind();
                 }
             }
+        }
+
+        // Helper method to fetch the user_id by username
+        private int GetUserIdByUsername(string username)
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+            int userId = 0;
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = "SELECT user_id FROM users WHERE user_username = @Username";
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@Username", username);
+                    conn.Open();
+
+                    object result = cmd.ExecuteScalar();
+                    if (result != null && int.TryParse(result.ToString(), out userId))
+                    {
+                        return userId;
+                    }
+                }
+            }
+
+            return userId; // Returns 0 if user not found
         }
 
         protected void rptResults_ItemCommand(object source, RepeaterCommandEventArgs e)
@@ -91,68 +121,13 @@ namespace API_DAMs.UI
                 // Retrieve the search term from ViewState (if exists)
                 string searchTerm = ViewState["SearchTerm"] as string;
 
-                if (!string.IsNullOrEmpty(searchTerm))
-                {
-                    // If there is a search term, load the APIs based on the search with sorting
-                    LoadAPIs(searchTerm, sortExpression);
-                }
-                else
-                {
-                    // If no search term, just load all APIs with sorting
-                    LoadAllAPIs(sortExpression);
-                }
+
+                // If no search term, just load all APIs with sorting
+                LoadAllAPIs();
+
             }
         }
 
-        private void LoadAllAPIs(string sortExpression = "code_uploadDate DESC")
-        {
-            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
-
-            string safeSortExpression = GetSafeSortExpression(sortExpression);
-
-            string query = $@"
-                SELECT 
-                    am.API_id, 
-                    am.API_name, 
-                    am.API_desc, 
-                    ah.code_uploadDate, 
-                    am.API_endpoint, 
-                    am.API_HTTP_method
-                FROM 
-                    api_methods am
-                JOIN 
-                    api_header ah ON am.code_id = ah.code_id
-                ORDER BY {safeSortExpression};";
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-
-                    rptResults.DataSource = dt;
-                    rptResults.DataBind();
-                }
-            }
-        }
-
-        private string GetSafeSortExpression(string sortExpression)
-        {
-            // Whitelist valid sorting columns
-            string[] validColumns = { "code_uploadDate", "API_name", "API_endpoint" };
-            string[] parts = sortExpression.Split(' ');
-
-            if (validColumns.Contains(parts[0], StringComparer.OrdinalIgnoreCase) &&
-                (parts.Length == 1 || parts[1].Equals("DESC", StringComparison.OrdinalIgnoreCase) || parts[1].Equals("ASC", StringComparison.OrdinalIgnoreCase)))
-            {
-                return sortExpression;
-            }
-
-            // Default to safe sorting
-            return "code_uploadDate DESC";
-        }
 
     }
 }

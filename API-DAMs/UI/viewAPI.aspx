@@ -9,7 +9,7 @@
     <link href="CSS/view.css" rel="stylesheet" />
     
     <div class="container nav-spacer">
-        <h5 class="text-center ">View your API</h5>
+        <h2 class="text-center ">View your API</h2>
         <asp:Repeater ID="rptResults" runat="server" OnItemCommand="rptResults_ItemCommand">
             <HeaderTemplate>
                 <table id="example" class="table table-striped" style="width:100%">

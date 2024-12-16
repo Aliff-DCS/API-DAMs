@@ -11,6 +11,10 @@ using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 using System.Text.Json;
+using System.Data;
+using System.Web.Services;
+using System.Web.Script.Services;
+
 
 
 namespace API_DAMs.UI
@@ -25,7 +29,11 @@ namespace API_DAMs.UI
             {
                 if (!string.IsNullOrEmpty(apiId))
                 {
+                    // Load API Details
                     await LoadAPIDetailsAsync(apiId);
+
+                    // Load Collaborators dynamically
+                    await LoadCollaboratorsAsync(apiId);
                 }
                 else
                 {
@@ -41,6 +49,168 @@ namespace API_DAMs.UI
                 }
             }
         }
+
+        private async Task LoadCollaboratorsAsync(string apiId)
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = @"
+                    SELECT 
+                        c.collab_id, 
+                        u1.user_name AS OwnerName, 
+                        u2.user_name AS SharedName,
+                        c.collab_permission
+                    FROM collaborator c
+                    INNER JOIN users u1 ON c.owner_id = u1.user_id
+                    INNER JOIN users u2 ON c.shared_id = u2.user_id
+                    WHERE c.API_id = @API_id";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@API_id", apiId);
+
+                    await conn.OpenAsync();
+                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+
+                    if (reader.HasRows)
+                    {
+                        DataTable dt = new DataTable();
+                        dt.Load(reader);
+
+                        // Bind to Repeater
+                        CollaboratorRepeater.DataSource = dt;
+                        CollaboratorRepeater.DataBind();
+                    }
+                }
+            }
+        }
+
+        [WebMethod]
+        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
+        public static List<FriendSearchResult> SearchFriends(string searchTerm)
+        {
+            List<FriendSearchResult> results = new List<FriendSearchResult>();
+
+            try
+            {
+                // Validate input
+                if (string.IsNullOrWhiteSpace(searchTerm))
+                {
+                    throw new ArgumentException("Search term cannot be empty");
+                }
+
+                // Check if user is logged in
+                if (HttpContext.Current.Session["UserID"] == null)
+                {
+                    throw new InvalidOperationException("User not logged in");
+                }
+
+                int currentUserId = Convert.ToInt32(HttpContext.Current.Session["UserID"]);
+                string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = @"
+            SELECT TOP 10 
+                u.user_id AS UserId, 
+                u.user_username AS Username, 
+                u.user_email AS Email
+            FROM users u
+            WHERE 
+                u.user_id != @CurrentUserID AND 
+                u.user_visibility = 1 AND
+                (u.user_username LIKE @SearchTerm OR u.user_email LIKE @SearchTerm)
+            ";
+
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@CurrentUserID", currentUserId);
+                    cmd.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
+
+                    conn.Open();
+                    SqlDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        results.Add(new FriendSearchResult
+                        {
+                            UserId = Convert.ToInt32(reader["UserId"]),
+                            Username = reader["Username"].ToString(),
+                            Email = reader["Email"].ToString()
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the full exception
+                System.Diagnostics.Debug.WriteLine($"Error in SearchFriends: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
+
+                // Throw the exception to provide more details
+                throw;
+            }
+
+            return results;
+        }
+
+        [WebMethod]
+        public static bool AddCollaborators(List<CollaboratorInfo> collaborators)
+        {
+            try
+            {
+                int currentUserId = Convert.ToInt32(HttpContext.Current.Session["UserID"]);
+                string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    conn.Open();
+
+                    foreach (var collaborator in collaborators)
+                    {
+                        string query = @"
+                INSERT INTO collaborator 
+                (initiator_id, receiver_id, friend_req, friend_status) 
+                VALUES 
+                (@InitiatorId, @ReceiverId, 1, 0)
+                ";
+
+                        using (SqlCommand cmd = new SqlCommand(query, conn))
+                        {
+                            cmd.Parameters.AddWithValue("@InitiatorId", currentUserId);
+                            cmd.Parameters.AddWithValue("@ReceiverId", collaborator.UserId);
+
+                            cmd.ExecuteNonQuery();
+                        }
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                System.Diagnostics.Debug.WriteLine($"Error in AddCollaborators: {ex.Message}");
+                return false;
+            }
+        }
+
+        // Helper classes for type safety
+        public class FriendSearchResult
+        {
+            public int UserId { get; set; }
+            public string Username { get; set; }
+            public string Email { get; set; }
+        }
+
+        public class CollaboratorInfo
+        {
+            public int UserId { get; set; }
+            public string Username { get; set; }
+            public string Email { get; set; }
+        }
+
 
         protected void EditButton_Click(object sender, EventArgs e)
         {
@@ -690,5 +860,25 @@ WHERE API_id = @API_ID";
                 }
             }
         }
+        protected void SaveCollaborationButton_Click(object sender, EventArgs e)
+        {
+            // Hardcoded names and permissions for demonstration
+            var collaborators = new[]
+            {
+                new { Name = "John Doe", Permission = Request.Form["Permission1"] },
+                new { Name = "Jane Smith", Permission = Request.Form["Permission2"] }
+            };
+
+            foreach (var collaborator in collaborators)
+            {
+                System.Diagnostics.Debug.WriteLine($"Collaborator: {collaborator.Name}, Permission: {collaborator.Permission}");
+                // Add database save logic here (if needed)
+            }
+
+            // Optionally show a success message
+            ScriptManager.RegisterStartupScript(this, GetType(), "collabSuccess", "alert('Collaborators saved successfully!');", true);
+        }
+
+
     }
 }

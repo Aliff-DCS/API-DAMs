@@ -105,6 +105,33 @@ namespace API_DAMs.UI
         protected global::System.Web.UI.WebControls.TextBox Description;
 
         /// <summary>
+        /// CollaborationButton control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button CollaborationButton;
+
+        /// <summary>
+        /// CollaboratorRepeater control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Repeater CollaboratorRepeater;
+
+        /// <summary>
+        /// SaveCollaborationButton control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Button SaveCollaborationButton;
+
+        /// <summary>
         /// SaveEditButton control.
         /// </summary>
         /// <remarks>

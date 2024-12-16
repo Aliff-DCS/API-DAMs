@@ -132,6 +132,15 @@ namespace API_DAMs.UI
         protected global::System.Web.UI.WebControls.Literal litPhone;
 
         /// <summary>
+        /// LitVisibility control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal LitVisibility;
+
+        /// <summary>
         /// pnlEditMode control.
         /// </summary>
         /// <remarks>
@@ -175,6 +184,15 @@ namespace API_DAMs.UI
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtPhone;
+
+        /// <summary>
+        /// rblVisibility control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.RadioButtonList rblVisibility;
 
         /// <summary>
         /// btnSubmitEdit control.

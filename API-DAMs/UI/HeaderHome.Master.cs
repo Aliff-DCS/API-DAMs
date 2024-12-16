@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
 using System.Web.UI;
@@ -11,12 +13,15 @@ namespace API_DAMs.UI
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Existing login check
             if (!IsPostBack)
             {
                 if (Session["User"] != null)
                 {
-                    litUsername.Text = Session["User"].ToString();
+                    string username = Session["User"].ToString();
+                    litUsername.Text = username;
+
+                    // Load user profile image
+                    LoadUserProfileImage(username);
                 }
                 else
                 {
@@ -24,6 +29,36 @@ namespace API_DAMs.UI
                 }
             }
         }
+
+        private void LoadUserProfileImage(string username)
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                string query = "SELECT user_image FROM users WHERE user_username = @Username";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@Username", username);
+                    connection.Open();
+
+                    object imageResult = command.ExecuteScalar();
+                    if (imageResult != DBNull.Value && !string.IsNullOrEmpty(imageResult.ToString()))
+                    {
+                        // If a user image exists, use it
+                        string userImagePath = ResolveUrl(imageResult.ToString());
+                        imgProfile.Src = userImagePath;
+                    }
+                    else
+                    {
+                        // If no image is set, use the default profile image
+                        imgProfile.Src = ResolveUrl("~/icon/default-profile.png");
+                    }
+                }
+            }
+        }
+
 
         protected void Logout_Click(object sender, EventArgs e)
         {

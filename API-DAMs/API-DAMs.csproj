@@ -2295,6 +2295,8 @@
     <Content Include="images\documentation.png" />
     <Content Include="images\personalized.png" />
     <Content Include="images\searching.png" />
+    <Content Include="UI\CollaboratorPage.aspx" />
+    <Content Include="UI\CollaboratorProfile.aspx" />
     <Content Include="UI\CSS\Documentation.css" />
     <Content Include="UI\CSS\LandingPage.css" />
     <Content Include="UI\CSS\ProfilePage.css" />
@@ -2317,6 +2319,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data Model\Class1.cs" />
+    <Compile Include="UI\CollaboratorPage.aspx.cs">
+      <DependentUpon>CollaboratorPage.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UI\CollaboratorPage.aspx.designer.cs">
+      <DependentUpon>CollaboratorPage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UI\CollaboratorProfile.aspx.cs">
+      <DependentUpon>CollaboratorProfile.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UI\CollaboratorProfile.aspx.designer.cs">
+      <DependentUpon>CollaboratorProfile.aspx</DependentUpon>
+    </Compile>
     <Compile Include="UI\DocumentationPage.aspx.cs">
       <DependentUpon>DocumentationPage.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -2359,13 +2375,6 @@
     </Compile>
     <Compile Include="UI\ProfilePage.aspx.designer.cs">
       <DependentUpon>ProfilePage.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="UI\ProfilePage.Master.cs">
-      <DependentUpon>ProfilePage.Master</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="UI\ProfilePage.Master.designer.cs">
-      <DependentUpon>ProfilePage.Master</DependentUpon>
     </Compile>
     <Compile Include="UI\SignInPage.aspx.cs">
       <DependentUpon>SignInPage.aspx</DependentUpon>
@@ -2454,7 +2463,6 @@
     <Content Include="icon\listing.php" />
     <None Include="packages.config" />
     <Content Include="UI\HeaderHome.Master" />
-    <Content Include="UI\ProfilePage.Master" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
     </None>

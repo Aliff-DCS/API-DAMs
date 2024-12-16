@@ -1,7 +1,9 @@
-﻿<%@ Page Title="" Language="C#" MasterPageFile="~/UI/ProfilePage.Master" AutoEventWireup="true" CodeBehind="ProfilePage.aspx.cs" Inherits="API_DAMs.UI.ProfilePage1" %>
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/UI/HeaderHome.Master" AutoEventWireup="true" CodeBehind="ProfilePage.aspx.cs" Inherits="API_DAMs.UI.ProfilePage1" %>
 <asp:Content ID="Content1" ContentPlaceHolderID="head" runat="server">
 </asp:Content>
 <asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="server">
+    <link href="CSS/ProfilePage.css" rel="stylesheet" />
+
     <div class="container emp-profile">
         <div class="row">
             <div class="col-md-4">
@@ -120,6 +122,14 @@
                                         <p><asp:Literal ID="litPhone" runat="server"></asp:Literal></p>
                                     </div>
                                 </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label>User Visibility</label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p><asp:Literal ID="LitVisibility" runat="server"></asp:Literal></p>
+                                    </div>
+                                </div>
                             </asp:Panel>
 
                             <asp:Panel ID="pnlEditMode" runat="server" Visible="false">
@@ -157,11 +167,23 @@
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6">
+                                        <label>User Visibility</label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <asp:RadioButtonList ID="rblVisibility" runat="server" CssClass="form-check">
+                                            <asp:ListItem Text="Public" Value="Public"></asp:ListItem>
+                                            <asp:ListItem Text="Private" Value="Private"></asp:ListItem>
+                                        </asp:RadioButtonList>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
                                         <asp:Button ID="btnSubmitEdit" runat="server" Text="Submit" CssClass="btn btn-success" OnClick="btnSubmitEdit_Click" />
                                         <asp:Button ID="btnCancelEdit" runat="server" Text="Cancel" CssClass="btn btn-danger" OnClick="btnCancelEdit_Click" />
                                     </div>
                                 </div>
                             </asp:Panel>
+
                         </div>
                     <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
                         <div class="timeline-content">
@@ -212,6 +234,4 @@
                 };
             });
         </script>
-
-
 </asp:Content>
