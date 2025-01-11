@@ -45,6 +45,14 @@
     background: linear-gradient(to right, #1B3A4B, #4089B1);
 }
 
+hr {
+    border: 0;
+    height: 1px;
+    background-color: #ccc;
+    margin: 0; /* Adjust margin if required */
+}
+
+
 .flex {
     display: flex;
     align-items: center;

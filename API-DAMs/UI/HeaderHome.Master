@@ -43,7 +43,19 @@
                         <li><a href="HomePage.aspx">Home</a></li>
                         <li><a href="DocumentationPage.aspx">Documentation</a></li>
                         <li>
-                            <a href="viewAPI.aspx" class="desktop-item">View API</a>
+                            <a href="#" class="desktop-item">Manage API</a>
+                             <label for="showDrop" class="mobile-item">Dropdown Menu</label>
+                             <ul class="drop-menu">
+                                 <li>
+                                     <asp:LinkButton ID="lnkOwnAPI" runat="server" CssClass="dropdown-item" OnClick="OwnAPI_Click">
+                                         Your API
+                                     </asp:LinkButton>
+                                 </li>
+                                     <asp:LinkButton ID="lnkSharedAPI" runat="server" CssClass="dropdown-item" OnClick="SharedAPI_Click">
+                                         Shared API
+                                     </asp:LinkButton>
+                                 </li>
+                             </ul>
                         </li>
                         <li>
                             <a href="CollaboratorPage.aspx" class="desktop-item">Collaborator</a>

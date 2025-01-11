@@ -1080,7 +1080,6 @@ namespace API_DAMs.UI
                 int userId = Convert.ToInt32(Session["UserId"]);
 
                 string codeText = SC_text.Text;
-                string programmingLanguage = Language.SelectedValue;
                 string platform = Platform.SelectedValue;
                 string description = Description.Text;
 
@@ -1091,15 +1090,14 @@ namespace API_DAMs.UI
                     connection.Open();
 
                     string insertCodeTextDetailsQuery = @"
-                        INSERT INTO api_header (code_text, code_language, code_platform, code_description, code_uploadDate, user_id)
-                        VALUES (@CodeText, @ProgrammingLanguage, @Platform, @Description, @UploadDate, @UserId);
+                        INSERT INTO api_header (code_text, code_platform, code_description, code_uploadDate, user_id)
+                        VALUES (@CodeText, @Platform, @Description, @UploadDate, @UserId);
                         SELECT SCOPE_IDENTITY();";
 
                     int codeID;
                     using (SqlCommand codeTextCommand = new SqlCommand(insertCodeTextDetailsQuery, connection))
                     {
                         codeTextCommand.Parameters.AddWithValue("@CodeText", codeText);
-                        codeTextCommand.Parameters.AddWithValue("@ProgrammingLanguage", programmingLanguage);
                         codeTextCommand.Parameters.AddWithValue("@Platform", platform);
                         codeTextCommand.Parameters.AddWithValue("@Description", description);
                         codeTextCommand.Parameters.AddWithValue("@UploadDate", DateTime.Now);
@@ -1236,7 +1234,6 @@ namespace API_DAMs.UI
             Description.Text = string.Empty;
 
             // Reset dropdown lists
-            Language.SelectedIndex = -1;
             Platform.SelectedIndex = -1;
 
             // Clear code_doc panels

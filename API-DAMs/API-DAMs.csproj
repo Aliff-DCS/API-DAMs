@@ -2311,6 +2311,7 @@
     <Content Include="UI\JS\viewAPI_Page.js" />
     <Content Include="UI\landingPage.aspx" />
     <Content Include="UI\ProfilePage.aspx" />
+    <Content Include="UI\sharedViewAPI.aspx" />
     <Content Include="UI\SignInPage.aspx" />
     <Content Include="UI\SignPage.aspx" />
     <Content Include="UI\viewAPI.aspx" />
@@ -2375,6 +2376,13 @@
     </Compile>
     <Compile Include="UI\ProfilePage.aspx.designer.cs">
       <DependentUpon>ProfilePage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UI\sharedViewAPI.aspx.cs">
+      <DependentUpon>sharedViewAPI.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UI\sharedViewAPI.aspx.designer.cs">
+      <DependentUpon>sharedViewAPI.aspx</DependentUpon>
     </Compile>
     <Compile Include="UI\SignInPage.aspx.cs">
       <DependentUpon>SignInPage.aspx</DependentUpon>

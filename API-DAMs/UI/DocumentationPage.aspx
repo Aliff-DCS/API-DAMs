@@ -19,21 +19,6 @@
             <asp:Panel ID="code_doc" CssClass="mt-4" runat="server" Visible="false">
                 <h1 class="h4 text-center">Your Code Details:</h1>
 
-                <!-- Language Dropdown -->
-                <div class="form-group flex">
-                    <label for="Language">Programming Language:</label>
-                    <asp:DropDownList ID="Language" CssClass="form-control" runat="server">
-                        <asp:ListItem Value="C#">C#</asp:ListItem>
-                        <asp:ListItem Value="Java">Java</asp:ListItem>
-                        <asp:ListItem Value="Python">Python</asp:ListItem>
-                        <asp:ListItem Value="JavaScript">JavaScript</asp:ListItem>
-                        <asp:ListItem Value="PHP">PHP</asp:ListItem>
-                        <asp:ListItem Value="Swift">Swift</asp:ListItem>
-                        <asp:ListItem Value="R">R</asp:ListItem>
-                        <asp:ListItem Value="MATLAB">MATLAB</asp:ListItem>
-                    </asp:DropDownList>
-                </div>
-
                 <!-- Platform Dropdown -->
                 <div class="form-group flex">
                     <label for="Platform">Platform:</label>

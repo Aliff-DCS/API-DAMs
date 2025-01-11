@@ -31,9 +31,8 @@ namespace API_DAMs.UI
                 {
                     // Load API Details
                     await LoadAPIDetailsAsync(apiId);
-
-                    // Load Collaborators dynamically
-                    await LoadCollaboratorsAsync(apiId);
+                    LoadFriendsList();
+                    collaboratorList();
                 }
                 else
                 {
@@ -46,171 +45,310 @@ namespace API_DAMs.UI
                 if (!string.IsNullOrEmpty(apiId))
                 {
                     RebuildDynamicControls(apiId);
+
                 }
             }
         }
 
-        private async Task LoadCollaboratorsAsync(string apiId)
+        // Method to get the list of friends of the currently logged-in user
+        private void LoadFriendsList()
         {
             string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
 
+            // Retrieve the logged-in user's ID from the session
+            string currentID = Session["UserID"]?.ToString();
+            string apiId = Request.QueryString["apiId"];
+
+            if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
+            {
+                // Redirect if the session is null or the API ID is missing
+                Response.Redirect("~/UI/SignInPage.aspx");
+                return;
+            }
+
+            // Fetch the list of friends (those who have a friendship with the logged-in user)
+            string query = @"
+                 SELECT 
+                    u.user_id,
+                    u.user_username
+                FROM users u
+                INNER JOIN friends c 
+                    ON (u.user_id = c.initiator_id AND c.receiver_id = @UserId)
+                    OR (u.user_id = c.receiver_id AND c.initiator_id = @UserId)
+                WHERE 
+                    u.user_visibility = 1 
+                    AND c.friend_status = 1
+                    AND NOT EXISTS (
+                        SELECT 1 
+                        FROM collaborator col 
+                        WHERE col.shared_id = u.user_id 
+                        AND col.API_id = @ApiId);";
+
+
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = @"
-                    SELECT 
-                        c.collab_id, 
-                        u1.user_name AS OwnerName, 
-                        u2.user_name AS SharedName,
-                        c.collab_permission
-                    FROM collaborator c
-                    INNER JOIN users u1 ON c.owner_id = u1.user_id
-                    INNER JOIN users u2 ON c.shared_id = u2.user_id
-                    WHERE c.API_id = @API_id";
-
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
-                    cmd.Parameters.AddWithValue("@API_id", apiId);
 
-                    await conn.OpenAsync();
-                    SqlDataReader reader = await cmd.ExecuteReaderAsync();
+                    cmd.Parameters.AddWithValue("@UserId", currentID);
+                    cmd.Parameters.AddWithValue("@ApiId", apiId);
 
-                    if (reader.HasRows)
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+
+                    if (dt.Rows.Count == 0)
                     {
-                        DataTable dt = new DataTable();
-                        dt.Load(reader);
-
-                        // Bind to Repeater
-                        CollaboratorRepeater.DataSource = dt;
-                        CollaboratorRepeater.DataBind();
+                        // Log or display a message for debugging
+                        Console.WriteLine("No data returned from query.");
                     }
+
+
+                    // Bind the data to the Repeater
+                    FriendsRepeater.DataSource = dt;
+                    FriendsRepeater.DataBind();
                 }
             }
         }
-
-        [WebMethod]
-        [ScriptMethod(ResponseFormat = ResponseFormat.Json)]
-        public static List<FriendSearchResult> SearchFriends(string searchTerm)
+        
+        protected void FriendsRepeater_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            List<FriendSearchResult> results = new List<FriendSearchResult>();
-
-            try
+            if (e.CommandName == "AddCollaborator")
             {
-                // Validate input
-                if (string.IsNullOrWhiteSpace(searchTerm))
-                {
-                    throw new ArgumentException("Search term cannot be empty");
-                }
-
-                // Check if user is logged in
-                if (HttpContext.Current.Session["UserID"] == null)
-                {
-                    throw new InvalidOperationException("User not logged in");
-                }
-
-                int currentUserId = Convert.ToInt32(HttpContext.Current.Session["UserID"]);
                 string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                // Retrieve the logged-in user's ID from the session
+                string currentID = Session["UserID"]?.ToString();
+                string apiId = Request.QueryString["apiId"];
+
+                if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
                 {
-                    string query = @"
-            SELECT TOP 10 
-                u.user_id AS UserId, 
-                u.user_username AS Username, 
-                u.user_email AS Email
-            FROM users u
-            WHERE 
-                u.user_id != @CurrentUserID AND 
-                u.user_visibility = 1 AND
-                (u.user_username LIKE @SearchTerm OR u.user_email LIKE @SearchTerm)
-            ";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@CurrentUserID", currentUserId);
-                    cmd.Parameters.AddWithValue("@SearchTerm", $"%{searchTerm}%");
-
-                    conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    while (reader.Read())
-                    {
-                        results.Add(new FriendSearchResult
-                        {
-                            UserId = Convert.ToInt32(reader["UserId"]),
-                            Username = reader["Username"].ToString(),
-                            Email = reader["Email"].ToString()
-                        });
-                    }
+                    // Redirect if the session is null or the API ID is missing
+                    Response.Redirect("~/UI/SignInPage.aspx");
+                    return;
                 }
-            }
-            catch (Exception ex)
-            {
-                // Log the full exception
-                System.Diagnostics.Debug.WriteLine($"Error in SearchFriends: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
 
-                // Throw the exception to provide more details
-                throw;
-            }
+                // Get the friend's ID from the CommandArgument
+                string friendId = e.CommandArgument.ToString();
 
-            return results;
-        }
+                // Insert the friend as a collaborator
+                string query = @"
+                    INSERT INTO collaborator (collab_permission, collab_date, API_id, owner_id, shared_id)
+                    VALUES ('Read', GETDATE(), @ApiId, @OwnerId, @SharedId);";
 
-        [WebMethod]
-        public static bool AddCollaborators(List<CollaboratorInfo> collaborators)
-        {
-            try
-            {
-                int currentUserId = Convert.ToInt32(HttpContext.Current.Session["UserID"]);
-                string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
-
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                try
                 {
-                    conn.Open();
-
-                    foreach (var collaborator in collaborators)
+                    using (SqlConnection conn = new SqlConnection(connectionString))
                     {
-                        string query = @"
-                INSERT INTO collaborator 
-                (initiator_id, receiver_id, friend_req, friend_status) 
-                VALUES 
-                (@InitiatorId, @ReceiverId, 1, 0)
-                ";
-
                         using (SqlCommand cmd = new SqlCommand(query, conn))
                         {
-                            cmd.Parameters.AddWithValue("@InitiatorId", currentUserId);
-                            cmd.Parameters.AddWithValue("@ReceiverId", collaborator.UserId);
+                            cmd.Parameters.AddWithValue("@ApiId", apiId);
+                            cmd.Parameters.AddWithValue("@OwnerId", currentID);
+                            cmd.Parameters.AddWithValue("@SharedId", friendId);
 
+                            conn.Open();
                             cmd.ExecuteNonQuery();
                         }
                     }
+
+                    // Show success message
+                    SuccessMessage.Visible = true;
+                    SuccessMessage.Text = "Collaborator added successfully!";
+                }
+                catch (Exception ex)
+                {
+                    // Log the error or handle it appropriately
+                    ErrorMessage.Visible = true;
+                    ErrorMessage.Text = "An error occurred: " + ex.Message;
                 }
 
-                return true;
+                // Refresh the friends list to update the UI
+                LoadFriendsList();
+                collaboratorList();
             }
-            catch (Exception ex)
+        }
+
+        private void collaboratorList()
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            // Retrieve the logged-in user's ID from the session
+            string currentID = Session["UserID"]?.ToString();
+            string apiId = Request.QueryString["apiId"];
+
+            if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
             {
-                // Log the exception
-                System.Diagnostics.Debug.WriteLine($"Error in AddCollaborators: {ex.Message}");
-                return false;
+                // Redirect if the session is null or the API ID is missing
+                Response.Redirect("~/UI/SignInPage.aspx");
+                return;
+            }
+
+            // Fetch collaborator data
+            string query = @"
+                SELECT 
+                    u.user_username AS CollaboratorName, 
+                    c.collab_permission AS Permission,
+                    c.collab_date AS CollaborationDate
+                FROM 
+                    collaborator c
+                JOIN 
+                    users u ON c.shared_id = u.user_id
+                WHERE 
+                    c.owner_id = @OwnerId AND 
+                    c.API_id = @ApiId;";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    // Add parameters to the query
+                    cmd.Parameters.AddWithValue("@OwnerId", currentID);
+                    cmd.Parameters.AddWithValue("@ApiId", apiId);
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+
+                    // Bind the data to the Repeater
+                    CollaboratorRepeater.DataSource = dt;
+                    CollaboratorRepeater.DataBind();
+                }
             }
         }
 
-        // Helper classes for type safety
-        public class FriendSearchResult
+        protected void rptResults_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            public int UserId { get; set; }
-            public string Username { get; set; }
-            public string Email { get; set; }
+            if (e.CommandName == "Edit")
+            {
+                // Enable editing mode
+                var ddlPermission = (DropDownList)e.Item.FindControl("ddlPermission");
+                var lblPermission = (Label)e.Item.FindControl("lblPermission");
+                var btnEdit = (Button)e.Item.FindControl("btnEdit");
+                var btnSave = (Button)e.Item.FindControl("btnSave");
+                var btnCancel = (Button)e.Item.FindControl("btnCancel");
+                var btnRemove = (Button)e.Item.FindControl("btnRemove");
+
+                lblPermission.Visible = false;
+                ddlPermission.Visible = true;
+                btnEdit.Visible = false;
+                btnSave.Visible = true;
+                btnCancel.Visible = true;
+                btnRemove.Visible = true;
+            }
+            else if (e.CommandName == "Cancel")
+            {
+                // Disable editing mode
+                var ddlPermission = (DropDownList)e.Item.FindControl("ddlPermission");
+                var lblPermission = (Label)e.Item.FindControl("lblPermission");
+                var btnEdit = (Button)e.Item.FindControl("btnEdit");
+                var btnSave = (Button)e.Item.FindControl("btnSave");
+                var btnCancel = (Button)e.Item.FindControl("btnCancel");
+                var btnRemove = (Button)e.Item.FindControl("btnRemove");
+
+                lblPermission.Visible = true;
+                ddlPermission.Visible = false;
+                btnEdit.Visible = true;
+                btnSave.Visible = false;
+                btnCancel.Visible = false;
+                btnRemove.Visible = false;
+            }
+            else if (e.CommandName == "Save")
+            {
+                // Save the updated permission
+                var ddlPermission = (DropDownList)e.Item.FindControl("ddlPermission");
+                string newPermission = ddlPermission.SelectedValue;
+                string collaboratorName = e.CommandArgument.ToString();
+
+                // Call method to update the database
+                UpdateCollaboratorPermission(collaboratorName, newPermission);
+
+                // Refresh the Repeater to show updated data
+                collaboratorList();
+            }
+            else if (e.CommandName == "Remove")
+            {
+                // Remove the collaborator
+                string collaboratorName = e.CommandArgument.ToString();
+
+                // Call method to remove the collaborator from the database
+                RemoveCollaborator(collaboratorName);
+
+                // Refresh the Repeater to reflect changes
+                collaboratorList();
+            }
         }
 
-        public class CollaboratorInfo
+        private void RemoveCollaborator(string collaboratorName)
         {
-            public int UserId { get; set; }
-            public string Username { get; set; }
-            public string Email { get; set; }
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            string query = @"
+        DELETE FROM collaborator
+        WHERE shared_id = (SELECT user_id FROM users WHERE user_username = @CollaboratorName)
+        AND owner_id = @OwnerId AND API_id = @ApiId;";
+
+            string currentID = Session["UserID"]?.ToString();
+            string apiId = Request.QueryString["apiId"];
+
+            if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
+            {
+                // Redirect if the session is null or the API ID is missing
+                Response.Redirect("~/UI/SignInPage.aspx");
+                return;
+            }
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@CollaboratorName", collaboratorName);
+                    cmd.Parameters.AddWithValue("@OwnerId", currentID);
+                    cmd.Parameters.AddWithValue("@ApiId", apiId);
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+            collaboratorList(); // Refresh the Collaborator list to reflect changes
+            LoadFriendsList();
         }
 
+        // Method to update permission in the database
+        private void UpdateCollaboratorPermission(string collaboratorName, string newPermission)
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            string query = @"
+    UPDATE c
+    SET c.collab_permission = @NewPermission
+    FROM collaborator c
+    JOIN users u ON c.shared_id = u.user_id
+    WHERE u.user_username = @CollaboratorName AND c.owner_id = @OwnerId AND c.API_id = @ApiId;";
+
+            string currentID = Session["UserID"]?.ToString();
+            string apiId = Request.QueryString["apiId"];
+
+            if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
+            {
+                // Redirect if the session is null or the API ID is missing
+                Response.Redirect("~/UI/SignInPage.aspx");
+                return;
+            }
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@NewPermission", newPermission);
+                    cmd.Parameters.AddWithValue("@CollaboratorName", collaboratorName);
+                    cmd.Parameters.AddWithValue("@OwnerId", currentID);
+                    cmd.Parameters.AddWithValue("@ApiId", apiId);
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
 
         protected void EditButton_Click(object sender, EventArgs e)
         {

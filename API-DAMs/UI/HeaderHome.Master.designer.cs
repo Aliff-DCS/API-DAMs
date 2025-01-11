@@ -24,6 +24,24 @@ namespace API_DAMs.UI
         protected global::System.Web.UI.WebControls.ContentPlaceHolder head;
 
         /// <summary>
+        /// lnkOwnAPI control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton lnkOwnAPI;
+
+        /// <summary>
+        /// lnkSharedAPI control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.LinkButton lnkSharedAPI;
+
+        /// <summary>
         /// imgProfile control.
         /// </summary>
         /// <remarks>
