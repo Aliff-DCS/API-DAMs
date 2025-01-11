@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 
 using System.Diagnostics;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace API_DAMs.UI
 {
@@ -57,10 +58,8 @@ namespace API_DAMs.UI
             if (Session["User"] != null)
             {
                 string username = Session["User"].ToString();
-
                 // Retrieve the user ID based on the username
                 int userId = GetUserId(username);
-
                 if (userId > 0)
                 {
                     // Store the user ID in the session for later use
@@ -70,6 +69,12 @@ namespace API_DAMs.UI
                 {
                     // If user ID is not found, redirect to the login page
                     Response.Redirect("~/UI/SignInPage.aspx");
+                }
+
+                // Only load applications if it's not a postback
+                if (!IsPostBack)
+                {
+                    LoadApplications();
                 }
             }
             else
@@ -90,6 +95,35 @@ namespace API_DAMs.UI
                 RecreateControls();
                 System.Diagnostics.Debug.WriteLine($"List count on postback: {globalParameterControlList.Count}");
             }
+        }
+
+        private void LoadApplications()
+        {
+            // Get the current user ID from session or authentication context
+            int currentUserId = Convert.ToInt32(Session["UserId"]);
+
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                // Modify the query to filter by user_id
+                string query = "SELECT app_id, app_name FROM application WHERE user_id = @UserId";
+
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    // Add parameter to avoid SQL injection
+                    cmd.Parameters.AddWithValue("@UserId", currentUserId);
+
+                    conn.Open();
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    Application.DataSource = reader;
+                    Application.DataTextField = "app_name";
+                    Application.DataValueField = "app_id";
+                    Application.DataBind();
+                }
+            }
+
+            // Insert the default item at the top of the dropdown
+            Application.Items.Insert(0, new ListItem("-- Select Application --", "0"));
         }
 
         private int GetUserId(string username)
@@ -258,13 +292,6 @@ namespace API_DAMs.UI
                                 checkApiCommand.Parameters.AddWithValue("@UserId", userId); // Include user ID in the query
 
                                 int count = (int)checkApiCommand.ExecuteScalar();
-
-                                if (count > 0)
-                                {
-                                    // Show confirmation popup if method already exists (but don't break the loop)
-                                    string script = $"confirm('The API method already exists for the current user: {methodName}. Do you want to proceed?');";
-                                    ScriptManager.RegisterStartupScript(this, GetType(), "confirmMessage", script, true);
-                                }
                             }
 
 
@@ -1121,14 +1148,6 @@ namespace API_DAMs.UI
                                 checkApiCommand.Parameters.AddWithValue("@UserId", userId); // Include user ID in the query
 
                                 int count = (int)checkApiCommand.ExecuteScalar();
-
-                                //if (count > 0)
-                                //{
-                                //    // Show confirmation popup if method already exists for the current user
-                                //    string script = $"if (!confirm('The API method already exists for the current user: {methodName}. Are you sure you want to save it again?')) {{ return false; }}";
-                                //    ScriptManager.RegisterStartupScript(this, GetType(), "confirmMessage", script, true);
-                                //    break;
-                                //}
                             }
 
                             string descriptionText = ((TextBox)panel.FindControl($"description_{panel.ID.Split('_')[2]}")).Text;
@@ -1160,15 +1179,35 @@ namespace API_DAMs.UI
                                 paramType = ((DropDownList)panel.FindControl($"param_type_{panel.ID.Split('_')[2]}")).SelectedValue;
                             }
 
+                            System.Diagnostics.Debug.WriteLine($"Selected Value: {Application.SelectedValue}");
+
+
+                            // Safely get the selected application ID from the dropdown
+                            int selectedAppId = int.Parse(Application.SelectedValue); // Default value
+
+                            System.Diagnostics.Debug.WriteLine($"Selected Application ID: {selectedAppId}");
+
+                            // You might also want to add some error handling:
+                            try
+                            {
+                                selectedAppId = int.Parse(Application.SelectedValue);
+                                System.Diagnostics.Debug.WriteLine($"Selected Application ID: {selectedAppId}");
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"Error parsing Application ID: {ex.Message}");
+                                selectedAppId = 0;
+                            }
 
                             // Insert into API_Details table and get the inserted API_ID
-                            string insertApiDetailsQuery = "INSERT INTO api_methods (API_name, API_paracount, API_returnType, API_HTTP_method, API_desc, API_endpoint, API_post_method, code_id) " +
-                               "VALUES (@API_Name, @ParaCount, @ReturnDataType, @HTTP_Method, @Description, @ApiEndpoint, @POST_Method, @CodeID); " +
-                               "SELECT SCOPE_IDENTITY();";
+                            string insertApiDetailsQuery = "INSERT INTO api_methods (API_name, API_paracount, API_returnType, API_HTTP_method, API_desc, API_endpoint, API_post_method, code_id, app_id) " +
+                                                           "VALUES (@API_Name, @ParaCount, @ReturnDataType, @HTTP_Method, @Description, @ApiEndpoint, @POST_Method, @CodeID, @AppID); " +
+                                                           "SELECT SCOPE_IDENTITY();";
 
                             int apiID;
                             using (SqlCommand apiDetailsCommand = new SqlCommand(insertApiDetailsQuery, connection))
                             {
+                                // Add parameters to the command
                                 apiDetailsCommand.Parameters.AddWithValue("@API_Name", methodName);
                                 apiDetailsCommand.Parameters.AddWithValue("@ParaCount", parameterCount);
                                 apiDetailsCommand.Parameters.AddWithValue("@ReturnDataType", returnType);
@@ -1178,8 +1217,13 @@ namespace API_DAMs.UI
                                 apiDetailsCommand.Parameters.AddWithValue("@POST_Method", paramType);
                                 apiDetailsCommand.Parameters.AddWithValue("@CodeID", codeID);
 
+                                // Add the app_id, setting it to DBNull if the selected value is 0
+                                apiDetailsCommand.Parameters.AddWithValue("@AppID", selectedAppId == 0 ? DBNull.Value : (object)selectedAppId);
+
+                                // Execute the query and retrieve the inserted API ID
                                 apiID = Convert.ToInt32(apiDetailsCommand.ExecuteScalar());
                             }
+
 
                             string jsonKeyValue = ((TextBox)panel.FindControl($"json_keys_{panel.ID.Split('_')[2]}")).Text;
                             if (jsonKeyValue == "No JSON key found, please choose another method")
@@ -1224,7 +1268,6 @@ namespace API_DAMs.UI
                 System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
                 Response.Write($"<script>alert('An error occurred: {ex.Message}');</script>");
             }
-
         }
 
         private void ClearAllControls()

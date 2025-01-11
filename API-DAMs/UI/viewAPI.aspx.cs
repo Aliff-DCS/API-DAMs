@@ -48,12 +48,13 @@ namespace API_DAMs.UI
             string testingPath = txtAppTestingPath.Text;
             string productionPath = txtAppProductionPath.Text;
             string language = txtAppLanguage.Text;
+            int currentUserId = Convert.ToInt32(Session["UserId"]);
 
             // Logic to insert data into the "application" table
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = "INSERT INTO application (app_name, app_testing_path, app_production_path, app_language) " +
-                               "VALUES (@AppName, @TestingPath, @ProductionPath, @Language)";
+                string query = "INSERT INTO application (app_name, app_testing_path, app_production_path, app_language,user_id) " +
+                               "VALUES (@AppName, @TestingPath, @ProductionPath, @Language, @UserId)";
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
                     // Add parameters to prevent SQL injection
@@ -61,6 +62,7 @@ namespace API_DAMs.UI
                     cmd.Parameters.AddWithValue("@TestingPath", string.IsNullOrEmpty(testingPath) ? DBNull.Value : (object)testingPath);
                     cmd.Parameters.AddWithValue("@ProductionPath", string.IsNullOrEmpty(productionPath) ? DBNull.Value : (object)productionPath);
                     cmd.Parameters.AddWithValue("@Language", string.IsNullOrEmpty(language) ? DBNull.Value : (object)language);
+                    cmd.Parameters.AddWithValue("@UserId", currentUserId);
 
                     // Open connection and execute the query
                     conn.Open();
@@ -72,16 +74,23 @@ namespace API_DAMs.UI
             Response.Redirect(Request.RawUrl);
         }
 
-
         // Method to load applications dropdown
         private void LoadApplications()
         {
+            // Get the current user ID from session or authentication context
+            int currentUserId = Convert.ToInt32(Session["UserId"]); // Example: User ID from session
+
             string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = "SELECT app_id, app_name FROM application";
+                // Modify the query to filter by user_id
+                string query = "SELECT app_id, app_name FROM application WHERE user_id = @UserId";
+
                 using (SqlCommand cmd = new SqlCommand(query, conn))
                 {
+                    // Add parameter to avoid SQL injection
+                    cmd.Parameters.AddWithValue("@UserId", currentUserId);
+
                     conn.Open();
                     SqlDataReader reader = cmd.ExecuteReader();
                     ddlApplications.DataSource = reader;
@@ -90,7 +99,10 @@ namespace API_DAMs.UI
                     ddlApplications.DataBind();
                 }
             }
+
+            // Insert the default item at the top of the dropdown
             ddlApplications.Items.Insert(0, new ListItem("-- Select Application --", "0"));
+            ddlApplications.Items.Insert(1, new ListItem("Default", "1"));
         }
 
         // Method to load application details
@@ -133,30 +145,54 @@ namespace API_DAMs.UI
         {
             if (ddlApplications.SelectedValue != null && ddlApplications.SelectedValue != "0")
             {
-                int selectedAppId = int.Parse(ddlApplications.SelectedValue);
-                ApplicationDetails appDetails = LoadApplicationDetails(selectedAppId);
-                lblHeader.Text = "Viewing Application: " + ddlApplications.SelectedItem?.Text ?? "Unknown Application";
-
-                if (appDetails != null)
+                // Check if "Default" is selected
+                if (ddlApplications.SelectedValue == "1")
                 {
-                    // Show the details card
-                    appDetailsCard.Attributes["class"] = appDetailsCard.Attributes["class"].Replace("d-none", "").Trim();
+                    // Handle behavior for Default selection
+                    lblHeader.Text = "Viewing Default APIs";
 
-                    // Populate the textboxes
-                    txtAppNameEdit.Text = appDetails.Name;
-                    txtAppTestingPathEdit.Text = appDetails.TestingPath;
-                    txtAppProductionPathEdit.Text = appDetails.ProductionPath;
-                    txtAppLanguageEdit.Text = appDetails.Language;
+                    // Hide the details card for default selection
+                    appDetailsCard.Attributes["class"] = appDetailsCard.Attributes["class"] + " d-none";
 
-                    // Set controls to view mode
-                    SetViewMode();
+                    // Clear any previous data in the repeater and hide API results container
+                    rptResults.DataSource = null;
+                    rptResults.DataBind();
+                    apiResultsContainer.Visible = true;
+
+                    // Load APIs by Default (for current user)
+                    LoadAPIsByDefault();
                 }
-                LoadAPIsByAppId(selectedAppId);
-                apiResultsContainer.Visible = true;
+                else
+                {
+                    int selectedAppId = int.Parse(ddlApplications.SelectedValue);
+
+                    // Load Application details for selected AppId
+                    ApplicationDetails appDetails = LoadApplicationDetails(selectedAppId);
+                    lblHeader.Text = "Viewing Application: " + ddlApplications.SelectedItem?.Text ?? "Unknown Application";
+
+                    if (appDetails != null)
+                    {
+                        // Show the details card if not "Default"
+                        appDetailsCard.Attributes["class"] = appDetailsCard.Attributes["class"].Replace("d-none", "").Trim();
+
+                        // Populate the textboxes with the application details
+                        txtAppNameEdit.Text = appDetails.Name;
+                        txtAppTestingPathEdit.Text = appDetails.TestingPath;
+                        txtAppProductionPathEdit.Text = appDetails.ProductionPath;
+                        txtAppLanguageEdit.Text = appDetails.Language;
+
+                        // Set controls to view mode
+                        SetViewMode();
+                    }
+
+                    // Load APIs by AppId for the selected application
+                    LoadAPIsByAppId(selectedAppId);
+                    apiResultsContainer.Visible = true;
+                }
             }
             else
             {
-                // Hide the details card
+                // Hide the details card and APIs if no valid selection
                 appDetailsCard.Attributes["class"] = appDetailsCard.Attributes["class"] + " d-none";
                 rptResults.DataSource = null;
                 rptResults.DataBind();
@@ -175,18 +211,24 @@ namespace API_DAMs.UI
         {
             if (ddlApplications.SelectedValue != null)
             {
+                // Store the current selected ID
+                string currentAppId = ddlApplications.SelectedValue;
+
                 string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     string query = @"UPDATE application 
-                           SET app_testing_path = @TestingPath,
+                           SET app_name = @AppName,
+                               app_testing_path = @TestingPath,
                                app_production_path = @ProductionPath,
                                app_language = @Language
                            WHERE app_id = @AppId";
 
                     using (SqlCommand cmd = new SqlCommand(query, conn))
                     {
-                        cmd.Parameters.AddWithValue("@AppId", int.Parse(ddlApplications.SelectedValue));
+                        cmd.Parameters.AddWithValue("@AppId", int.Parse(currentAppId));
+                        cmd.Parameters.AddWithValue("@AppName",
+                            string.IsNullOrEmpty(txtAppNameEdit.Text) ? (object)DBNull.Value : txtAppNameEdit.Text);
                         cmd.Parameters.AddWithValue("@TestingPath",
                             string.IsNullOrEmpty(txtAppTestingPathEdit.Text) || txtAppTestingPathEdit.Text == "N/A"
                                 ? (object)DBNull.Value
@@ -206,8 +248,20 @@ namespace API_DAMs.UI
                 }
 
                 // Reset to view mode and refresh data
-                SetViewMode();
-                ddlApplications_SelectedIndexChanged(null, null);
+                LoadApplications();
+                // Re-select the saved app ID
+                ddlApplications.SelectedValue = currentAppId;
+                lblHeader.Text = "Viewing Application: " + ddlApplications.SelectedItem?.Text ?? "Unknown Application";
+
+                // Reset to view mode
+                txtAppNameEdit.ReadOnly = true;
+                txtAppTestingPathEdit.ReadOnly = true;
+                txtAppProductionPathEdit.ReadOnly = true;
+                txtAppLanguageEdit.ReadOnly = true;
+
+                btnEdit.Visible = true;
+                btnSave.Visible = false;
+                btnCancel.Visible = false;
             }
         }
 
@@ -234,7 +288,7 @@ namespace API_DAMs.UI
         // Helper method to set edit mode
         private void SetEditMode()
         {
-            txtAppNameEdit.ReadOnly = true; // Keep name readonly
+            txtAppNameEdit.ReadOnly = false; // Keep name readonly
             txtAppTestingPathEdit.ReadOnly = false;
             txtAppProductionPathEdit.ReadOnly = false;
             txtAppLanguageEdit.ReadOnly = false;
@@ -273,6 +327,47 @@ namespace API_DAMs.UI
                     DataTable dt = new DataTable();
                     da.Fill(dt);
 
+                    rptResults.DataSource = dt;
+                    rptResults.DataBind();
+                }
+            }
+        }
+
+        private void LoadAPIsByDefault()
+        {
+            // Get the current logged-in user's ID from session or authentication context
+            int currentUserId = Convert.ToInt32(Session["UserId"]); // Example: User ID from session
+
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            // SQL query to select APIs based on the logged-in user
+            string query = @"
+                        SELECT 
+                            am.API_id, 
+                            am.API_name, 
+                            am.API_desc, 
+                            ah.code_uploadDate, 
+                            am.API_endpoint, 
+                            am.API_HTTP_method
+                        FROM 
+                            api_methods am
+                        JOIN 
+                            api_header ah ON am.code_id = ah.code_id
+                        WHERE 
+                            ah.user_id = @UserId";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    // Add the current user's ID as a parameter to the query
+                    cmd.Parameters.AddWithValue("@UserId", currentUserId);
+
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    DataTable dt = new DataTable();
+                    da.Fill(dt);
+
+                    // Bind the result set to the repeater control
                     rptResults.DataSource = dt;
                     rptResults.DataBind();
                 }
@@ -333,7 +428,7 @@ namespace API_DAMs.UI
         }
 
         // Helper method to fetch the user_id by username
-         private int GetUserIdByUsername(string username)
+        private int GetUserIdByUsername(string username)
         {
             string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
             int userId = 0;
@@ -378,7 +473,5 @@ namespace API_DAMs.UI
 
             }
         }
-
-
     }
 }

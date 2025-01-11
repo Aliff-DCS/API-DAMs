@@ -29,6 +29,12 @@
                     </asp:DropDownList>
                 </div>
 
+                <div class="form-group flex">
+                    <label for="Application">Select Application:</label>
+                    <asp:DropDownList ID="Application" CssClass="form-control" runat="server" >
+                    </asp:DropDownList>
+                </div>
+
                 <!-- Description -->
                 <div class="form-group flex">
                     <label for="Description">Description:</label>

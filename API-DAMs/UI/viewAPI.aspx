@@ -29,10 +29,11 @@
         </div>
 
         <div id="appDetailsCard" runat="server" class="card mt-3 shadow d-none">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center" data-bs-toggle="collapse" data-bs-target="#appDetailsContent" aria-expanded="false" aria-controls="appDetailsContent">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center app-header" data-bs-toggle="collapse" data-bs-target="#appDetailsContent" aria-expanded="false" aria-controls="appDetailsContent">
                 <h5 class="mb-0">Application Details</h5>
                 <i class="bi bi-chevron-down"></i>
             </div>
+
 
             <div id="appDetailsContent" class="collapse">
                 <div id="appDetailsContainer" class="card-body">
@@ -58,9 +59,9 @@
                     </div>
                     <div class="row">
                         <div class="col text-end">
-                            <asp:Button ID="btnEdit" runat="server" Text="Edit" CssClass="btn btn-primary" OnClientClick="return enableEdit();" />
-                            <asp:Button ID="btnSave" runat="server" Text="Save" CssClass="btn btn-success d-none" OnClick="btnSave_Click" />
-                            <asp:Button ID="btnCancel" runat="server" Text="Cancel" CssClass="btn btn-secondary d-none" OnClientClick="return cancelEdit();" />
+                            <asp:Button ID="btnEdit" runat="server" Text="Edit" CssClass="btn btn-primary" OnClick="btnEdit_Click" />
+                            <asp:Button ID="btnSave" runat="server" Text="Save" CssClass="btn btn-success" OnClick="btnSave_Click" Visible="false" />
+                            <asp:Button ID="btnCancel" runat="server" Text="Cancel" CssClass="btn btn-secondary" OnClick="btnCancel_Click" Visible="false" />
                         </div>
                     </div>
                 </div>
@@ -146,6 +147,32 @@
 
     <script src="JS/viewAPI_Page.js"></script>
     <script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function () {
+            const appDetailsContent = document.getElementById("appDetailsContent");
+            const appDetailsCard = document.querySelector(".app-header");
+
+            // Restore state from sessionStorage
+            const savedState = sessionStorage.getItem("appDetailsExpanded");
+
+            if (savedState === "true") {
+                appDetailsContent.classList.add("show"); // Bootstrap class to keep it open
+                appDetailsCard.setAttribute("aria-expanded", "true");
+            } else if (savedState === "false") {
+                appDetailsContent.classList.remove("show"); // Collapse it
+                appDetailsCard.setAttribute("aria-expanded", "false");
+            }
+
+            // Bootstrap's collapse toggle event listener
+            appDetailsContent.addEventListener("shown.bs.collapse", function () {
+                sessionStorage.setItem("appDetailsExpanded", "true");
+            });
+
+            appDetailsContent.addEventListener("hidden.bs.collapse", function () {
+                sessionStorage.setItem("appDetailsExpanded", "false");
+            });
+        });
+
+
 
         // Event listener to toggle the icon
         document.querySelector('.card-header').addEventListener('click', function () {
