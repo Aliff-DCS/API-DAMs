@@ -11,97 +11,88 @@ namespace API_DAMs.UI
 {
 
 
-    public partial class HeaderHome
+    public partial class FileUploadPage
     {
 
         /// <summary>
-        /// head control.
+        /// FileUpload control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.ContentPlaceHolder head;
+        protected global::System.Web.UI.WebControls.FileUpload FileUpload;
 
         /// <summary>
-        /// lnkCode control.
+        /// FileUploadError control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lnkCode;
+        protected global::System.Web.UI.WebControls.Label FileUploadError;
 
         /// <summary>
-        /// lnkFile control.
+        /// UploadedFileLink control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lnkFile;
+        protected global::System.Web.UI.WebControls.HyperLink UploadedFileLink;
 
         /// <summary>
-        /// lnkOwnAPI control.
+        /// HiddenFileContent control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lnkOwnAPI;
+        protected global::System.Web.UI.WebControls.HiddenField HiddenFileContent;
 
         /// <summary>
-        /// lnkSharedAPI control.
+        /// code_doc control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lnkSharedAPI;
+        protected global::System.Web.UI.WebControls.Panel code_doc;
 
         /// <summary>
-        /// imgProfile control.
+        /// Platform control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.HtmlControls.HtmlImage imgProfile;
+        protected global::System.Web.UI.WebControls.DropDownList Platform;
 
         /// <summary>
-        /// litUsername control.
+        /// Application control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Literal litUsername;
+        protected global::System.Web.UI.WebControls.DropDownList Application;
 
         /// <summary>
-        /// lnkProfileSetting control.
+        /// Description control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lnkProfileSetting;
+        protected global::System.Web.UI.WebControls.TextBox Description;
 
         /// <summary>
-        /// lnkLogout control.
+        /// btnSubmit control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.LinkButton lnkLogout;
-
-        /// <summary>
-        /// ContentPlaceHolder1 control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.ContentPlaceHolder ContentPlaceHolder1;
+        protected global::System.Web.UI.WebControls.Button btnSubmit;
     }
 }

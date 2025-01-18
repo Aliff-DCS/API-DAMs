@@ -54,7 +54,7 @@
                         <asp:Literal ID="litUsername" runat="server"></asp:Literal>
                     </h5>
                     <h6>
-                        Tagline here
+                        <asp:Literal ID="litTagline" runat="server"></asp:Literal>
                     </h6>
                     <p class="proile-rating">Joined since : <span><asp:Literal ID="litJD" runat="server"></asp:Literal></span></p>
                     <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -74,16 +74,16 @@
         </div>
         <div class="row">
             <div class="col-md-4">
-                <div class="profile-work">
-                    <p>Your Colaborator</p>
-                    <a href="">Website Link</a><br/>
-                    <a href="">Bootsnipp Profile</a><br/>
-                    <a href="">Bootply Profile</a>
-                    <a href="">Web Designer</a><br/>
-                    <a href="">Web Developer</a><br/>
-                    <a href="">WordPress</a><br/>
-                    <a href="">WooCommerce</a><br/>
-                    <a href="">PHP, .Net</a><br/>
+                <!-- View Mode -->
+                <div class="profile-work" id="StaticBio" runat="server" visible="true">
+                    <p>User Bio</p>
+                    <textarea id="txtUserDesc" runat="server" class="form-control" rows="8" disabled="disabled"></textarea>
+                </div>
+
+                <!-- Edit Mode -->
+                <div class="profile-work" id="EditableBio" runat="server" visible="false">
+                    <p>Edit Bio</p>
+                    <textarea id="txtEditUserDesc" runat="server" class="form-control" rows="8"></textarea>
                 </div>
             </div>
             <div class="col-md-8">
@@ -163,6 +163,14 @@
                                     </div>
                                     <div class="col-md-6">
                                         <asp:TextBox ID="txtPhone" runat="server" CssClass="form-control"></asp:TextBox>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label>Tagline</label>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <asp:TextBox ID="txtTagline" runat="server" CssClass="form-control"></asp:TextBox>
                                     </div>
                                 </div>
                                 <div class="row">

@@ -69,6 +69,15 @@ namespace API_DAMs.UI
         protected global::System.Web.UI.WebControls.Literal litUsername;
 
         /// <summary>
+        /// litTagline control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Literal litTagline;
+
+        /// <summary>
         /// litJD control.
         /// </summary>
         /// <remarks>
@@ -85,6 +94,42 @@ namespace API_DAMs.UI
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button btnEditProfile;
+
+        /// <summary>
+        /// StaticBio control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl StaticBio;
+
+        /// <summary>
+        /// txtUserDesc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlTextArea txtUserDesc;
+
+        /// <summary>
+        /// EditableBio control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlGenericControl EditableBio;
+
+        /// <summary>
+        /// txtEditUserDesc control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.HtmlControls.HtmlTextArea txtEditUserDesc;
 
         /// <summary>
         /// pnlViewMode control.
@@ -184,6 +229,15 @@ namespace API_DAMs.UI
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.TextBox txtPhone;
+
+        /// <summary>
+        /// txtTagline control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.TextBox txtTagline;
 
         /// <summary>
         /// rblVisibility control.

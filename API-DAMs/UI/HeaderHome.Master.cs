@@ -105,5 +105,17 @@ namespace API_DAMs.UI
             Response.Redirect("~/UI/sharedViewAPI.aspx"); // Replace with your actual profile settings page URL
         }
 
+        protected void lnkCode_Click(object sender, EventArgs e)
+        {
+            // Redirect to the profile settings page
+            Response.Redirect("~/UI/DocumentationPage.aspx"); // Replace with your actual profile settings page URL
+        }
+
+        protected void lnkFile_Click(object sender, EventArgs e)
+        {
+            // Redirect to the profile settings page
+            Response.Redirect("~/UI/FileUploadPage.aspx"); // Replace with your actual profile settings page URL
+        }
+
     }
 }

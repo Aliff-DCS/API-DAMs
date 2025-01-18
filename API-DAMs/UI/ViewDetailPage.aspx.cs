@@ -24,11 +24,16 @@ namespace API_DAMs.UI
         protected async void Page_Load(object sender, EventArgs e)
         {
             string apiId = Request.QueryString["apiId"];
+            int currentUserId = Convert.ToInt32(Session["UserId"]);
 
             if (!IsPostBack)
             {
                 if (!string.IsNullOrEmpty(apiId))
                 {
+                    // Check edit permissions
+                    bool canEdit = await CanEditApiAsync(apiId, currentUserId);
+                    EditButton.Visible = canEdit;
+
                     // Load API Details
                     await LoadAPIDetailsAsync(apiId);
                     LoadFriendsList();
@@ -45,10 +50,60 @@ namespace API_DAMs.UI
                 if (!string.IsNullOrEmpty(apiId))
                 {
                     RebuildDynamicControls(apiId);
-
                 }
             }
         }
+
+        private async Task<bool> CanEditApiAsync(string apiId, int currentUserId)
+        {
+            bool canEdit = false;
+
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                // Query to check ownership or permissions
+                string query = @"
+            SELECT 
+                CASE 
+                    WHEN ah.user_id = @currentUserId THEN 1
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM collaborator c 
+                        WHERE c.API_id = am.API_id 
+                          AND c.shared_id = @currentUserId 
+                          AND c.collab_permission IN ('write', 'admin')
+                    ) THEN 1
+                    ELSE 0
+                END AS CanEdit
+            FROM api_methods am
+            INNER JOIN api_header ah ON am.code_id = ah.code_id
+            WHERE am.API_id = @apiId";
+
+                SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@apiId", apiId);
+                command.Parameters.AddWithValue("@currentUserId", currentUserId);
+
+                try
+                {
+                    await connection.OpenAsync();
+                    object result = await command.ExecuteScalarAsync();
+
+                    if (result != null && result != DBNull.Value)
+                    {
+                        canEdit = Convert.ToInt32(result) == 1;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log the exception or handle it as necessary
+                    Console.WriteLine(ex.Message);
+                }
+            }
+
+            return canEdit;
+        }
+
 
         // Method to get the list of friends of the currently logged-in user
         private void LoadFriendsList()
@@ -360,6 +415,8 @@ namespace API_DAMs.UI
             PostMethodText.ReadOnly = false;
             JSONMethodText.ReadOnly = false;
             Description.ReadOnly = false;
+            CollaborationButton.Visible= false;
+            CancelEditButton.Visible = true;
 
 
             // Show the "Save Edit" button
@@ -368,6 +425,46 @@ namespace API_DAMs.UI
             // Hide the ParameterPlaceholder
             ParameterPlaceholder.Visible = false;
         }
+
+        protected void CancelEditButton_Click(object sender, EventArgs e)
+        {
+            // Re-disable the static TextBoxes without saving changes
+            API_Name.ReadOnly = true;
+            Endpoint.ReadOnly = true;
+            Param_req.ReadOnly = true;
+            Method_Type.ReadOnly = true;
+            PostMethodText.ReadOnly = true;
+            JSONMethodText.ReadOnly = true;
+            Description.ReadOnly = true;
+
+            // Hide the "Save Edit" and "Cancel" buttons
+            SaveEditButton.Visible = false;
+            CancelEditButton.Visible = false;
+
+            // Show the ParameterPlaceholder and other UI elements again
+            ParameterPlaceholder.Visible = true;
+            CollaborationButton.Visible = true;
+
+            // Optionally, reset the TextBox values to their original state if needed
+            //LoadOriginalAPIValues();
+        }
+
+        //private void LoadOriginalAPIValues()
+        //{
+        //    string apiId = Request.QueryString["apiId"];
+        //    if (!string.IsNullOrEmpty(apiId))
+        //    {
+        //        // Fetch the original data from the database and set the TextBox values
+        //        //var apiData = GetAPIDataFromDatabase(apiId);
+        //        API_Name.Text = apiData.Name;
+        //        Endpoint.Text = apiData.Endpoint;
+        //        Param_req.Text = apiData.ParamRequired;
+        //        Method_Type.Text = apiData.MethodType;
+        //        PostMethodText.Text = apiData.PostMethodText;
+        //        JSONMethodText.Text = apiData.JSONMethodText;
+        //        Description.Text = apiData.Description;
+        //    }
+        //}
 
         protected void SaveEditButton_Click(object sender, EventArgs e)
         {
@@ -387,12 +484,14 @@ namespace API_DAMs.UI
                 PostMethodText.ReadOnly = true;
                 JSONMethodText.ReadOnly = true;
                 Description.ReadOnly = true;
+                CancelEditButton.Visible = false;
 
                 // Hide the "Save Edit" button after saving
                 SaveEditButton.Visible = false;
 
                 // Show the ParameterPlaceholder again after saving
                 ParameterPlaceholder.Visible = true;
+                CollaborationButton.Visible = true;
             }
         }
 
@@ -407,19 +506,19 @@ namespace API_DAMs.UI
 
             // Update query for saving API details
             string updateApiQuery = @"
-UPDATE api_methods
-SET API_name = @API_Name,
-    API_endpoint = @ApiEndpoint,
-    API_desc = @Description,
-    API_HTTP_method = @HTTP_Method,
-    API_post_method = @POST_Method
-WHERE API_id = @API_ID";
+                UPDATE api_methods
+                SET API_name = @API_Name,
+                    API_endpoint = @ApiEndpoint,
+                    API_desc = @Description,
+                    API_HTTP_method = @HTTP_Method,
+                    API_post_method = @POST_Method
+                WHERE API_id = @API_ID";
 
-            // Update query for updating UploadDate in api_header
-            string updateUploadDateQuery = @"
-UPDATE api_header
-SET code_uploadDate = @UploadDate
-WHERE code_id = (SELECT code_id FROM api_methods WHERE API_id = @API_ID)";
+                            // Update query for updating UploadDate in api_header
+                            string updateUploadDateQuery = @"
+                UPDATE api_header
+                SET code_uploadDate = @UploadDate
+                WHERE code_id = (SELECT code_id FROM api_methods WHERE API_id = @API_ID)";
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
@@ -497,8 +596,6 @@ WHERE API_id = @API_ID";
                 }
             }
         }
-
-
 
         private async Task LoadAPIDetailsAsync(string apiId)
         {
@@ -597,7 +694,6 @@ WHERE API_id = @API_ID";
                 }
             }
         }
-
 
         private void GenerateParameterInputsPOST(string apiId, string endpoint)
         {
@@ -747,7 +843,6 @@ WHERE API_id = @API_ID";
                 }
             }
         }
-
 
         private void GenerateParameterInputs(string apiId, string endpointTemplate)
         {
@@ -1016,7 +1111,6 @@ WHERE API_id = @API_ID";
             // Optionally show a success message
             ScriptManager.RegisterStartupScript(this, GetType(), "collabSuccess", "alert('Collaborators saved successfully!');", true);
         }
-
 
     }
 }

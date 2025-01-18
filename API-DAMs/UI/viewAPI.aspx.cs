@@ -303,19 +303,21 @@ namespace API_DAMs.UI
             string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
 
             string query = @"
-        SELECT 
-            am.API_id, 
-            am.API_name, 
-            am.API_desc, 
-            ah.code_uploadDate, 
-            am.API_endpoint, 
-            am.API_HTTP_method
-        FROM 
-            api_methods am
-        JOIN 
-            api_header ah ON am.code_id = ah.code_id
-        WHERE 
-            am.app_id = @AppId";
+                    SELECT 
+                        am.API_id, 
+                        am.API_name, 
+                        am.API_desc, 
+                        am.API_update_date,
+                        am.API_endpoint, 
+                        am.API_HTTP_method
+                    FROM 
+                        api_methods am
+                    LEFT JOIN 
+                        api_header ah ON am.code_id = ah.code_id
+                    LEFT JOIN 
+                        file_details fd ON am.file_id = fd.file_id
+                    WHERE 
+                        am.app_id = @AppId;";
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
@@ -342,19 +344,23 @@ namespace API_DAMs.UI
 
             // SQL query to select APIs based on the logged-in user
             string query = @"
-                        SELECT 
-                            am.API_id, 
-                            am.API_name, 
-                            am.API_desc, 
-                            ah.code_uploadDate, 
-                            am.API_endpoint, 
-                            am.API_HTTP_method
-                        FROM 
-                            api_methods am
-                        JOIN 
-                            api_header ah ON am.code_id = ah.code_id
-                        WHERE 
-                            ah.user_id = @UserId";
+                SELECT
+                    am.API_id, 
+                    am.API_name, 
+                    am.API_desc,
+                    am.API_update_date,
+                    am.API_endpoint, 
+                    am.API_HTTP_method
+                FROM 
+                    api_methods am
+                LEFT JOIN 
+                    api_header ah ON am.code_id = ah.code_id  
+                LEFT JOIN 
+                    file_details fd ON am.file_id = fd.file_id  
+                WHERE 
+                    (fd.user_id = @UserId OR ah.user_id = @UserId)
+                    AND am.app_id IS NULL;";
+
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
@@ -373,7 +379,6 @@ namespace API_DAMs.UI
                 }
             }
         }
-
 
         private void LoadAllAPIs()
         {
@@ -397,19 +402,24 @@ namespace API_DAMs.UI
             }
 
             string query = $@"
-        SELECT 
-            am.API_id, 
-            am.API_name, 
-            am.API_desc, 
-            ah.code_uploadDate, 
-            am.API_endpoint, 
-            am.API_HTTP_method
-        FROM 
-            api_methods am
-        JOIN 
-            api_header ah ON am.code_id = ah.code_id
-        WHERE 
-            ah.user_id = @UserId;";
+                            SELECT 
+                                am.API_id, 
+                                am.API_name, 
+                                am.API_desc,
+                                am.API_update_date,
+                                ah.code_uploadDate, 
+                                am.API_endpoint, 
+                                am.API_HTTP_method
+                            FROM 
+                                api_methods am
+                            JOIN 
+                                api_header ah ON am.code_id = ah.code_id
+                            JOIN 
+                                file_details fd ON am.file_id = fd.file_id
+                            WHERE 
+                                (fd.user_id = @UserId OR ah.user_id = @UserId)
+                                AND am.app_id IS NULL;
+";
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {

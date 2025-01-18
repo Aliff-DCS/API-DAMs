@@ -14,20 +14,57 @@ namespace API_DAMs.UI
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            // Check if the user is logged in
             if (Session["User"] != null)
             {
-                // Retrieve user information from the database
-                string username = Session["User"].ToString();
-                LoadUserProfile(username);
+                btnEditProfile.Visible = false;
+                if (Request.QueryString["userId"] != null)
+                {
+                    string userId = Request.QueryString["userId"];
+                    string username = GetUsernameById(userId);
+
+                    if (!string.IsNullOrEmpty(username))
+                    {
+                        LoadUserProfile(username);
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("No username found for the given userId.");
+                    }
+                }
+                else
+                {
+                    btnEditProfile.Visible = true;
+
+                    string username = Session["User"].ToString();
+                    LoadUserProfile(username);
+                }
             }
             else
             {
-                // Redirect to login page if the user is not logged in
                 Response.Redirect("~/UI/SignInPage.aspx");
             }
-
         }
+
+        private string GetUsernameById(string userId)
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                string query = "SELECT user_username FROM users WHERE user_id = @UserId";
+
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@UserId", userId);
+
+                    connection.Open();
+                    object result = command.ExecuteScalar();
+
+                    return result != null ? result.ToString() : null;
+                }
+            }
+        }
+
 
         private void LoadUserProfile(string username)
         {
@@ -35,7 +72,7 @@ namespace API_DAMs.UI
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = "SELECT user_id, user_username, user_email, user_phone, user_name, user_image, user_joined_date, user_visibility FROM users WHERE user_username = @Username";
+                string query = "SELECT user_id, user_username, user_email, user_phone, user_name, user_image, user_joined_date, user_visibility, user_tagline FROM users WHERE user_username = @Username";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
@@ -52,6 +89,16 @@ namespace API_DAMs.UI
                         litName.Text = reader["user_name"].ToString();
                         litPhone.Text = reader["user_phone"].ToString();
                         litJD.Text = reader["user_joined_date"].ToString();
+
+                        // Assign the tagline value
+                        if (reader["user_tagline"] != DBNull.Value && !string.IsNullOrEmpty(reader["user_tagline"].ToString()))
+                        {
+                            litTagline.Text = reader["user_tagline"].ToString();
+                        }
+                        else
+                        {
+                            litTagline.Text = "Tagline";
+                        }
 
                         // Map user_visibility BIT value to "Public" or "Private"
                         bool isPublic = Convert.ToBoolean(reader["user_visibility"]);
@@ -80,6 +127,10 @@ namespace API_DAMs.UI
             string name = txtName.Text;
             string email = txtEmail.Text;
             string phone = txtPhone.Text;
+            string tagline = txtTagline.Text;
+            string userDesc = txtEditUserDesc.Value;
+
+
 
             // Get the selected visibility value
             bool isPublic = rblVisibility.SelectedValue == "Public";
@@ -88,7 +139,15 @@ namespace API_DAMs.UI
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = "UPDATE users SET user_name = @Name, user_email = @Email, user_phone = @Phone, user_visibility = @Visibility WHERE user_username = @Username";
+                string query = @"
+                    UPDATE users 
+                    SET user_name = @Name, 
+                        user_email = @Email, 
+                        user_phone = @Phone, 
+                        user_visibility = @Visibility, 
+                        user_tagline = @Tagline, 
+                        user_desc = @UserDesc
+                    WHERE user_username = @Username";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
@@ -97,6 +156,8 @@ namespace API_DAMs.UI
                     command.Parameters.AddWithValue("@Phone", phone);
                     command.Parameters.AddWithValue("@Visibility", isPublic); // Pass boolean for BIT column
                     command.Parameters.AddWithValue("@Username", username);
+                    command.Parameters.AddWithValue("@Tagline", tagline);
+                    command.Parameters.AddWithValue("@UserDesc", userDesc);
 
                     connection.Open();
                     command.ExecuteNonQuery();
@@ -109,8 +170,9 @@ namespace API_DAMs.UI
             // Switch back to view mode
             pnlViewMode.Visible = true;
             pnlEditMode.Visible = false;
+            EditableBio.Visible = false;
+            StaticBio.Visible = true;
         }
-
 
         protected void btnEditProfile_Click(object sender, EventArgs e)
         {
@@ -119,7 +181,12 @@ namespace API_DAMs.UI
             txtName.Text = litName.Text;
             txtEmail.Text = litEmail.Text;
             txtPhone.Text = litPhone.Text;
+            txtTagline.Text = litTagline.Text;
 
+            EditableBio.Visible = true;
+            StaticBio.Visible = false;
+
+            txtEditUserDesc.Value = txtUserDesc.Value;
             // Set the selected value of the RadioButtonList
             bool isPublic = LitVisibility.Text == "Public";
             rblVisibility.SelectedValue = isPublic ? "Public" : "Private";
@@ -135,9 +202,9 @@ namespace API_DAMs.UI
             // Discard changes and switch back to view mode
             pnlViewMode.Visible = true;
             pnlEditMode.Visible = false;
+            EditableBio.Visible = false;
+            StaticBio.Visible = true;
         }
-
-
 
 
         protected void btnSubmit_Click(object sender, EventArgs e)

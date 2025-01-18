@@ -245,6 +245,17 @@ namespace API_DAMs.UI
                         WHERE friend_id = @CollabId";
                             cmd.Parameters.AddWithValue("@CollabId", e.CommandArgument);
                             break;
+                        case "Redirect":
+                            if (int.TryParse(e.CommandArgument.ToString(), out int userId))
+                            {
+                                Response.Redirect($"ProfilePage.aspx?userId={userId}");
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine("Invalid userId passed for redirection.");
+                            }
+                            break;
+
                     }
 
                     int rowsAffected = cmd.ExecuteNonQuery();

@@ -7,6 +7,28 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
+<style>
+    /* Apply border and border-radius to the entire table */
+    #example {
+        border: 2px solid black; /* Table border */
+        border-radius: 8px; /* Rounded corners for the table */
+        overflow: hidden; /* To ensure rounded corners show correctly */
+        max-width:1200px;
+    }
+
+    /* Apply border and background to table headers */
+    #example th {
+        background-color: #007bff; /* Header background color */
+        color: white; /* Text color for headers */
+        border: 1px solid #ddd; /* Border for header cells */
+        text-align: center; /* Optional: Align header text to the center */
+    }
+
+    /* Optional: Add border radius to table rows or cells */
+    #example td, #example th {
+        border-radius: 5px; /* Rounded corners for header and data cells */
+    }
+</style>
 
     <link href="CSS/view.css" rel="stylesheet" />
     
@@ -113,12 +135,11 @@
                     <table id="example" class="table table-striped" style="width:100%">
                         <thead>
                             <tr>
-                                <th class="delete-sort">Select</th>
                                 <th>API Name</th>
                                 <th>HTTP Method</th>
-                                <th>API Description</th>
-                                <th>API Endpoint</th>
-                                <th>Date and Time</th>
+                                <th>Description</th>
+                                <th>Endpoint</th>
+                                <th>Time</th>
                                 <th>API Details</th>
                             </tr>
                         </thead>
@@ -126,12 +147,11 @@
                 </HeaderTemplate>
                 <ItemTemplate>
                     <tr>
-                        <td><input type="checkbox" name="selectItem" value="<%# Eval("API_id") %>" class="selectCheckbox" /></td>
                         <td><%# Eval("API_name") %></td>
                         <td><%# Eval("API_HTTP_method") %></td>
                         <td><%# Eval("API_desc").ToString() %></td>
                         <td><%# Eval("API_endpoint") %></td>
-                        <td><%# Eval("code_uploadDate", "{0:dd-MM-yyyy HH:mm:ss}") %></td>
+                        <td><%# Eval("API_update_date", "{0:dd-MM-yyyy HH:mm:ss}") %></td>
                         <td>
                             <asp:LinkButton CommandName="Redirect" CommandArgument='<%# Eval("API_id") %>' runat="server" CssClass="btn btn-link">View Details</asp:LinkButton>
                         </td>
@@ -147,6 +167,9 @@
 
     <script src="JS/viewAPI_Page.js"></script>
     <script type="text/javascript">
+
+        new DataTable('#example');
+
         document.addEventListener("DOMContentLoaded", function () {
             const appDetailsContent = document.getElementById("appDetailsContent");
             const appDetailsCard = document.querySelector(".app-header");
@@ -192,12 +215,5 @@
             });
         });
 
-        function toggleAllCheckboxes(source) {
-            // Get all checkboxes with class 'selectCheckbox'
-            var checkboxes = document.querySelectorAll('.selectCheckbox');
-            checkboxes.forEach(function(checkbox) {
-                checkbox.checked = source.checked;
-            });
-        }
     </script>
 </asp:Content>

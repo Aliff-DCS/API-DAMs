@@ -2304,6 +2304,7 @@
     <Content Include="UI\CSS\HomePage.css" />
     <Content Include="UI\CSS\view.css" />
     <Content Include="UI\DocumentationPage.aspx" />
+    <Content Include="UI\FileUploadPage.aspx" />
     <Content Include="UI\HomePage.aspx" />
     <Content Include="UI\JS\HomePage.js" />
     <Content Include="UI\JS\Profile.js" />
@@ -2340,6 +2341,13 @@
     </Compile>
     <Compile Include="UI\DocumentationPage.aspx.designer.cs">
       <DependentUpon>DocumentationPage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UI\FileUploadPage.aspx.cs">
+      <DependentUpon>FileUploadPage.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UI\FileUploadPage.aspx.designer.cs">
+      <DependentUpon>FileUploadPage.aspx</DependentUpon>
     </Compile>
     <Compile Include="UI\Header.Master.cs">
       <DependentUpon>Header.Master</DependentUpon>
@@ -2479,6 +2487,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="UploadCode\" />
     <Folder Include="UploadedImages\" />
   </ItemGroup>
   <PropertyGroup>

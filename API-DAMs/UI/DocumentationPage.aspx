@@ -13,26 +13,27 @@
             </div>
 
             <!-- Documentation Button -->
-            <asp:Button runat="server" Text="Documentation" CssClass="btn btn-primary" OnClick="handleCode" OnClientClick="handleCodeJs();" />
+            <asp:Button runat="server" Text="Extract information" CssClass="btn btn-primary" OnClick="handleCode" OnClientClick="handleCodeJs();" />
 
             <!-- Code Details Form -->
             <asp:Panel ID="code_doc" CssClass="mt-4" runat="server" Visible="false">
                 <h1 class="h4 text-center">Your Code Details:</h1>
 
-                <!-- Platform Dropdown -->
-                <div class="form-group flex">
-                    <label for="Platform">Platform:</label>
-                    <asp:DropDownList ID="Platform" CssClass="form-control" runat="server">
-                        <asp:ListItem Value="Windows">Windows</asp:ListItem>
-                        <asp:ListItem Value="Mac OS">Mac OS</asp:ListItem>
-                        <asp:ListItem Value="Linux">Linux</asp:ListItem>
-                    </asp:DropDownList>
-                </div>
+                <div class="form-group d-flex justify-content-between">
+                    <div class="flex-grow-1 me-2">
+                        <label for="Platform">Platform:</label>
+                        <asp:DropDownList ID="Platform" CssClass="form-control" runat="server">
+                            <asp:ListItem Value="Windows">Windows</asp:ListItem>
+                            <asp:ListItem Value="Mac OS">Mac OS</asp:ListItem>
+                            <asp:ListItem Value="Linux">Linux</asp:ListItem>
+                        </asp:DropDownList>
+                    </div>
 
-                <div class="form-group flex">
-                    <label for="Application">Select Application:</label>
-                    <asp:DropDownList ID="Application" CssClass="form-control" runat="server" >
-                    </asp:DropDownList>
+                    <div class="flex-grow-1 ms-2">
+                        <label for="Application">Select Application:</label>
+                        <asp:DropDownList ID="Application" CssClass="form-control" runat="server">
+                        </asp:DropDownList>
+                    </div>
                 </div>
 
                 <!-- Description -->

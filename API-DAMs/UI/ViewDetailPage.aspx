@@ -189,6 +189,7 @@
         </div>
 
         <asp:Button ID="SaveEditButton" runat="server" Text="Save Edit" CssClass="btn btn-success mt-4" Visible="false" OnClick="SaveEditButton_Click" />
+        <asp:Button ID="CancelEditButton" runat="server" Text="Cancel" CssClass="btn btn-secondary mt-4 ms-2" Visible="false" OnClick="CancelEditButton_Click" />
 
         <asp:PlaceHolder ID="ParameterPlaceholder" runat="server">
             <div class="parameter-container"  runat="server" id="test">

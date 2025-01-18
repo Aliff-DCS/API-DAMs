@@ -17,7 +17,7 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace API_DAMs.UI
 {
-    public partial class DocumentationPage : System.Web.UI.Page
+    public partial class FileUploadPage : System.Web.UI.Page
     {
         private const string DeletedPanelsKey = "DeletedPanels";
 
@@ -236,10 +236,10 @@ namespace API_DAMs.UI
             //ViewState.Clear();
             bool shouldShowAlert = false;
             List<int> methodIndices = new List<int>();
+            string codeText = HiddenFileContent.Value;
 
-            if (!string.IsNullOrWhiteSpace(SC_text.Text))
+            if (!string.IsNullOrWhiteSpace(codeText))
             {
-                var codeText = SC_text.Text;
                 var (methodNames, jsonKeys) = ExtractMethodNamesAndJsonKeys(codeText);
                 var parameterCounts = ExtractParameterCounts(codeText);
                 var returnTypes = ExtractReturnTypes(codeText);
@@ -327,26 +327,83 @@ namespace API_DAMs.UI
             }
             else
             {
-                shouldShowAlert = true;
                 code_doc.Visible = false;
                 btnSubmit.Visible = false;
             }
 
-            if (shouldShowAlert)
-            {
-                ScriptManager.RegisterStartupScript(this, GetType(), "alertMessage", "alert('Invalid code format. No valid methods found.');", true);
-            }
         }
 
         protected void handleCode(object sender, EventArgs e)
         {
-            // Clear only Panel type controls within code_doc
-            ClearPanels(code_doc);
-            ResetControlValues();
+            if (FileUpload.HasFile)
+            {
+                try
+                {
+                    string fileExtension = Path.GetExtension(FileUpload.FileName);
+                    if (fileExtension != ".txt" && fileExtension != ".cs")
+                    {
+                        FileUploadError.Text = "Only .txt or .cs files are supported.";
+                        FileUploadError.Visible = true;
+                        return;
+                    }
 
-            ViewState[DeletedPanelsKey] = new List<string>();
-            Page_Load(sender, e); // Trigger Page_Load to process data
+                    // Read file content as text
+                    string fileContent;
+                    using (StreamReader reader = new StreamReader(FileUpload.PostedFile.InputStream))
+                    {
+                        fileContent = reader.ReadToEnd();
+                    }
+
+                    // Ensure the upload directory exists
+                    string uploadFolder = Server.MapPath("~/UploadCode/");
+                    if (!Directory.Exists(uploadFolder))
+                    {
+                        Directory.CreateDirectory(uploadFolder);
+                    }
+
+                    // Save file to the server
+                    string fileName = Path.GetFileName(FileUpload.FileName);
+                    string filePath = Path.Combine(uploadFolder, fileName);
+                    FileUpload.SaveAs(filePath);
+
+                    // Store relative file path in session
+                    string relativeFilePath = $"~/UploadCode/{fileName}";
+                    Session["UploadedFilePath"] = relativeFilePath;
+
+                    // Clear error messages
+                    FileUploadError.Visible = false;
+
+                    // Optionally, display the uploaded file name or link
+                    UploadedFileLink.Visible = true;
+                    UploadedFileLink.Text = fileName;
+                    UploadedFileLink.NavigateUrl = relativeFilePath;
+
+
+                    // Store content in the hidden field
+                    HiddenFileContent.Value = fileContent;
+
+                    // Clear error messages
+                    FileUploadError.Visible = false;
+
+                    ClearPanels(code_doc);
+                    ResetControlValues();
+
+                    ViewState[DeletedPanelsKey] = new List<string>();
+                    Page_Load(sender, e); // Trigger Page_Load to process data
+                }
+                catch (Exception ex)
+                {
+                    FileUploadError.Text = "Error reading file: " + ex.Message;
+                    FileUploadError.Visible = true;
+                }
+            }
+            else
+            {
+                FileUploadError.Text = "Please upload a file.";
+                FileUploadError.Visible = true;
+            }
         }
+
 
         private void ClearPanels(Control parent)
         {
@@ -1095,7 +1152,6 @@ namespace API_DAMs.UI
         {
             try
             {
-
                 // Retrieve user ID from the session
                 if (Session["UserId"] == null)
                 {
@@ -1106,9 +1162,16 @@ namespace API_DAMs.UI
 
                 int userId = Convert.ToInt32(Session["UserId"]);
 
-                string codeText = SC_text.Text;
+                string relativeFilePath = Session["UploadedFilePath"] as string;
+                if (string.IsNullOrEmpty(relativeFilePath))
+                {
+                    Response.Write("<script>alert('No file uploaded. Please upload a file before submitting.');</script>");
+                    return;
+                }
+
                 string platform = Platform.SelectedValue;
                 string description = Description.Text;
+
 
                 string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
 
@@ -1116,22 +1179,22 @@ namespace API_DAMs.UI
                 {
                     connection.Open();
 
-                    string insertCodeTextDetailsQuery = @"
-                        INSERT INTO api_header (code_text, code_platform, code_description, code_uploadDate, user_id)
-                        VALUES (@CodeText, @Platform, @Description, @UploadDate, @UserId);
-                        SELECT SCOPE_IDENTITY();";
+                    string insertFileDetailsQuery = @"
+                        INSERT INTO file_details (file_platform, file_path, file_desc, user_id)
+                        VALUES (@Platform, @FilePath, @Description, @UserId);
+                        SELECT SCOPE_IDENTITY();"; // Use this to retrieve the generated file_id
 
-                    int codeID;
-                    using (SqlCommand codeTextCommand = new SqlCommand(insertCodeTextDetailsQuery, connection))
+                    int fileID;
+                    using (SqlCommand fileDetailsCommand = new SqlCommand(insertFileDetailsQuery, connection))
                     {
-                        codeTextCommand.Parameters.AddWithValue("@CodeText", codeText);
-                        codeTextCommand.Parameters.AddWithValue("@Platform", platform);
-                        codeTextCommand.Parameters.AddWithValue("@Description", description);
-                        codeTextCommand.Parameters.AddWithValue("@UploadDate", DateTime.Now);
-                        codeTextCommand.Parameters.AddWithValue("@UserId", userId); // Add the user ID here
+                        fileDetailsCommand.Parameters.AddWithValue("@Platform", platform);
+                        fileDetailsCommand.Parameters.AddWithValue("@FilePath", relativeFilePath);
+                        fileDetailsCommand.Parameters.AddWithValue("@Description", description);
+                        fileDetailsCommand.Parameters.AddWithValue("@UserId", userId);
 
-                        codeID = Convert.ToInt32(codeTextCommand.ExecuteScalar());
+                        fileID = Convert.ToInt32(fileDetailsCommand.ExecuteScalar());
                     }
+
 
 
                     foreach (Control control in code_doc.Controls)
@@ -1200,8 +1263,8 @@ namespace API_DAMs.UI
                             }
 
                             // Insert into API_Details table and get the inserted API_ID
-                            string insertApiDetailsQuery = "INSERT INTO api_methods (API_name, API_paracount, API_returnType, API_HTTP_method, API_desc, API_endpoint, API_post_method, code_id, app_id, API_update_date) " +
-                                                           "VALUES (@API_Name, @ParaCount, @ReturnDataType, @HTTP_Method, @Description, @ApiEndpoint, @POST_Method, @CodeID, @AppID, @API_update_date); " +
+                            string insertApiDetailsQuery = "INSERT INTO api_methods (API_name, API_paracount, API_returnType, API_HTTP_method, API_desc, API_endpoint, API_post_method, file_id, app_id) " +
+                                                           "VALUES (@API_Name, @ParaCount, @ReturnDataType, @HTTP_Method, @Description, @ApiEndpoint, @POST_Method, @fileID, @AppID); " +
                                                            "SELECT SCOPE_IDENTITY();";
 
                             int apiID;
@@ -1215,8 +1278,7 @@ namespace API_DAMs.UI
                                 apiDetailsCommand.Parameters.AddWithValue("@Description", descriptionText);
                                 apiDetailsCommand.Parameters.AddWithValue("@ApiEndpoint", apiEndpointText);
                                 apiDetailsCommand.Parameters.AddWithValue("@POST_Method", paramType);
-                                apiDetailsCommand.Parameters.AddWithValue("@CodeID", codeID);
-                                apiDetailsCommand.Parameters.AddWithValue("@API_update_date", DateTime.Now);
+                                apiDetailsCommand.Parameters.AddWithValue("@fileID", fileID);
 
                                 // Add the app_id, setting it to DBNull if the selected value is 0
                                 apiDetailsCommand.Parameters.AddWithValue("@AppID", selectedAppId == 0 ? DBNull.Value : (object)selectedAppId);
@@ -1273,8 +1335,8 @@ namespace API_DAMs.UI
 
         private void ClearAllControls()
         {
-            // Clear textboxes
-            SC_text.Text = string.Empty;
+            // Clear file
+            ScriptManager.RegisterStartupScript(this, this.GetType(), "clearFileUpload", "document.getElementById('" + FileUpload.ClientID + "').value = '';", true);
             Description.Text = string.Empty;
 
             // Reset dropdown lists

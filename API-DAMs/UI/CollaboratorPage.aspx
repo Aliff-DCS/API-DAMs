@@ -7,7 +7,27 @@
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.js"></script>
 
     <link href="CSS/view.css" rel="stylesheet" />
+<style>
+    /* Apply border and border-radius to the entire table */
+    #example {
+        border: 2px solid black; /* Table border */
+        border-radius: 8px; /* Rounded corners for the table */
+        overflow: hidden; /* To ensure rounded corners show correctly */
+    }
 
+    /* Apply border and background to table headers */
+    #example th {
+        background-color: #007bff; /* Header background color */
+        color: white; /* Text color for headers */
+        border: 1px solid #ddd; /* Border for header cells */
+        text-align: center; /* Optional: Align header text to the center */
+    }
+
+    /* Optional: Add border radius to table rows or cells */
+    #example td, #example th {
+        border-radius: 5px; /* Rounded corners for header and data cells */
+    }
+</style>
     
     <div class="container nav-spacer">
         <h2 class="text-center ">Find collaborator</h2>
@@ -48,16 +68,6 @@
     </ItemTemplate>
         <FooterTemplate>
                 </tbody>
-                <tfoot>
-                    <tr>
-                        <th>User Name</th>
-                        <th>User Email</th>
-                        <th>User Tagline</th>
-                        <th>Joined Date</th>
-                        <th>User Details</th>
-                        <th>Friend Request</th>
-                    </tr>
-                </tfoot>
             </table>
         </FooterTemplate>
     </asp:Repeater>
