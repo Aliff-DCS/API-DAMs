@@ -173,14 +173,16 @@ namespace API_DAMs.UI
                             SELECT COUNT(DISTINCT am.API_id)
                             FROM api_methods am
                             LEFT JOIN api_header ah ON am.code_id = ah.code_id
-                            WHERE ah.user_id = @userId", conn))
+                            LEFT JOIN file_details fd ON am.file_id = fd.file_id
+                            WHERE ah.user_id = @userId
+                              AND am.app_id IS NOT NULL;", conn))
                     {
                         cmd.Parameters.AddWithValue("@userId", Session["UserID"]);
                         lblTotalAPIs.Text = cmd.ExecuteScalar().ToString();
                     }
 
                     // Shared APIs
-                    using (SqlCommand cmd = new SqlCommand("SELECT COUNT(API_id) FROM collaborator WHERE shared_id = @sharedId", conn))
+                    using (SqlCommand cmd = new SqlCommand("SELECT COUNT(APP_id) FROM collaborator WHERE shared_id = @sharedId", conn))
                     {
                         cmd.Parameters.AddWithValue("@sharedId", currentUserId);
                         var result = cmd.ExecuteScalar();

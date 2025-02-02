@@ -2311,6 +2311,7 @@
     <Content Include="UI\JS\SignPage.js" />
     <Content Include="UI\JS\viewAPI_Page.js" />
     <Content Include="UI\landingPage.aspx" />
+    <Content Include="UI\ManageApp.aspx" />
     <Content Include="UI\ProfilePage.aspx" />
     <Content Include="UI\sharedViewAPI.aspx" />
     <Content Include="UI\SignInPage.aspx" />
@@ -2377,6 +2378,13 @@
     </Compile>
     <Compile Include="UI\landingPage.aspx.designer.cs">
       <DependentUpon>landingPage.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="UI\ManageApp.aspx.cs">
+      <DependentUpon>ManageApp.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="UI\ManageApp.aspx.designer.cs">
+      <DependentUpon>ManageApp.aspx</DependentUpon>
     </Compile>
     <Compile Include="UI\ProfilePage.aspx.cs">
       <DependentUpon>ProfilePage.aspx</DependentUpon>

@@ -40,14 +40,36 @@
             align-items:center;
             
         }
+        /* Ensure the label is on top of the TextBox */
+        .form-group label {
+            display: block; /* Make the label take up the full width */
+            margin-bottom: 5px; /* Add some spacing between the label and the TextBox */
+        }
+
+        /* Style the small TextBox for the API Invoke Count */
+        .small-textbox {
+            width: 100%; /* Take up the full width of the parent container */
+            max-width: 100px; /* Set a maximum width for the TextBox */
+            text-align: center; /* Center the text inside the TextBox */
+            font-size: 0.875rem; /* Smaller font size for the TextBox */
+        }
+
+        /* Adjust the position of the API Invoke Count box */
+        .col-2 .form-group {
+            margin-top: 30px; /* Lower the box by adding margin */
+        }
     </style>
 
     <div class="container nav-spacer">
         <h2 class="text-center ">API Details</h2>
+        <small class="d-block text-center mt-2">
+            <asp:Label ID="lblPerm" runat="server"></asp:Label>
+        </small>
+
     <div class="mb-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4 mb-3">The API Details:</h2>
-            <asp:Button ID="EditButton" runat="server" Text="Edit" CssClass="btn btn-primary" OnClick="EditButton_Click" />
+            <asp:Button ID="EditButton" runat="server" Text="Edit" CssClass="btn btn-primary" OnClick="EditButton_Click" Visible="false" />
         </div>
 
         <div class="form-group flex">
@@ -58,20 +80,31 @@
             <label for="Endpoint">API Endpoint:</label>
             <asp:TextBox ID="Endpoint" runat="server" CssClass="form-control white" ReadOnly="true"></asp:TextBox>
         </div>
-        <div class="form-group flex">
-            <label for="Param_req">Parameter Required:</label>
-            <asp:TextBox ID="Param_req" runat="server" CssClass="form-control white" ReadOnly="true"></asp:TextBox>
-        </div>
-        <div class="form-group flex">
-            <label for="Method_Type">API Method Type:</label>
-            <asp:TextBox ID="Method_Type" runat="server" CssClass="form-control white" ReadOnly="true"></asp:TextBox>
-        </div>
-        <asp:Panel ID="PostMethodPanel" runat="server" CssClass="post-method-panel" Visible="false">
-            <div class="form-group flex">
-                <label for="PostMethodText">POST Method:</label>
-                <asp:TextBox ID="PostMethodText" runat="server" CssClass="form-control white" ReadOnly="true"></asp:TextBox>
+        <div class="row">
+            <!-- Parameter Required -->
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="Param_req">Parameter Required:</label>
+                    <asp:TextBox ID="Param_req" runat="server" CssClass="form-control white" ReadOnly="true"></asp:TextBox>
+                </div>
             </div>
-        </asp:Panel>
+
+            <!-- API Method Type -->
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label for="Method_Type">API Method Type:</label>
+                    <asp:TextBox ID="Method_Type" runat="server" CssClass="form-control white" ReadOnly="true"></asp:TextBox>
+                </div>
+            </div>
+
+            <!-- POST Method Panel -->
+            <div class="col-md-4">
+                <asp:Panel ID="PostMethodPanel" runat="server" CssClass="form-group post-method-panel" Visible="false">
+                    <label for="PostMethodText">POST Method:</label>
+                    <asp:TextBox ID="PostMethodText" runat="server" CssClass="form-control white" ReadOnly="true"></asp:TextBox>
+                </asp:Panel>
+            </div>
+        </div>
 
         <asp:Panel ID="JSONKey" runat="server" CssClass="post-method-panel" Visible="false">
             <div class="form-group flex">
@@ -80,116 +113,25 @@
             </div>
         </asp:Panel>
 
-        <div class="form-group flex">
-            <label for="Description">Description:</label>
-            <asp:TextBox ID="Description" runat="server" CssClass="form-control white" ReadOnly="true" TextMode="MultiLine" Rows="4"></asp:TextBox>
-        </div>
+        <div class="row">
+            <!-- Description (90% width) -->
+            <div class="col-10">
+                <div class="form-group">
+                    <label for="Description">Description:</label>
+                    <asp:TextBox ID="Description" runat="server" CssClass="form-control white" ReadOnly="true" TextMode="MultiLine" Rows="4"></asp:TextBox>
+                </div>
+            </div>
 
-        <!-- Collaboration Button -->
-        <asp:Button ID="CollaborationButton" runat="server" Text="Collaboration" CssClass="btn btn-info mt-4" OnClientClick="showCollaborationModal(); return false;" />
-
-        <!-- Collaboration Modal -->
-        <div id="collaborationModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="collaborationModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg" role="document">
-                <div class="modal-content">
-                    <div class="modal-header d-flex justify-content-between align-items-center">
-                        <h5 class="modal-title" id="collaborationModalLabel">Collaborator</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-
-                    <div class="modal-body">
-                        <!-- Collaborator List -->
-                       <asp:Repeater ID="CollaboratorRepeater" runat="server" OnItemCommand="rptResults_ItemCommand">
-                            <HeaderTemplate>
-                                <table id="example" class="table table-striped" style="width:100%">
-                                    <thead>
-                                        <tr>
-                                            <th>Collaborator Name</th>
-                                            <th>Permission</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                            </HeaderTemplate>
-                            <ItemTemplate>
-                                <tr>
-                                    <td><%# Eval("CollaboratorName") %></td>
-                                    <td>
-                                        <!-- Permission Display -->
-                                        <asp:Label ID="lblPermission" runat="server" Text='<%# Eval("Permission") %>' />
-                                        <asp:DropDownList ID="ddlPermission" runat="server" Visible="false" CssClass="form-select form-select-sm">
-                                            <asp:ListItem Value="Read">Read</asp:ListItem>
-                                            <asp:ListItem Value="Write">Write</asp:ListItem>
-                                            <asp:ListItem Value="Admin">Admin</asp:ListItem>
-                                        </asp:DropDownList>
-                                    </td>
-                                    <td>
-                                        <!-- Action Buttons -->
-                                        <asp:Button ID="btnEdit" runat="server" Text="Edit Permission" CommandName="Edit" 
-                                            CommandArgument='<%# Eval("CollaboratorName") %>' CssClass="btn btn-primary btn-sm" />
-                                        <asp:Button ID="btnSave" runat="server" Text="Save" CommandName="Save" 
-                                            CommandArgument='<%# Eval("CollaboratorName") %>' Visible="false" CssClass="btn btn-success btn-sm" />
-                                        <asp:Button ID="btnCancel" runat="server" Text="Cancel" CommandName="Cancel" 
-                                            CommandArgument='<%# Eval("CollaboratorName") %>' Visible="false" CssClass="btn btn-secondary btn-sm" />
-                                        <asp:Button ID="btnRemove" runat="server" Text="Remove Collaborator" CommandName="Remove" 
-                                            CommandArgument='<%# Eval("CollaboratorName") %>' Visible="false" CssClass="btn btn-danger btn-sm" />
-                                    </td>
-                                </tr>
-                            </ItemTemplate>
-                            <FooterTemplate>
-                                    </tbody>
-                                    <tfoot>
-                                    </tfoot>
-                                </table>
-                            </FooterTemplate>
-                        </asp:Repeater>
-                    </div>
-
-                    <div class="modal-body">
-                        <!-- Button to toggle the dropdown -->
-                        <button class="btn btn-primary mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleContent" aria-expanded="false" aria-controls="collapsibleContent">
-                            +Add Collaborator+
-                        </button>
-
-                        <div class="collapse" id="collapsibleContent">
-                            <div class="card card-body">
-                                <h5>Available Friends:</h5>
-                                <asp:Repeater ID="FriendsRepeater" runat="server" OnItemCommand="FriendsRepeater_ItemCommand">
-                                    <ItemTemplate>
-                                        <div class="friend-item d-flex justify-content-between align-items-center mb-2">
-                                            <span>
-                                                <%# Eval("user_username") %> 
-                                            </span>
-                                            <asp:Button ID="AddCollaboratorButton" runat="server" 
-                                                        Text="Add Collaborator" 
-                                                        CssClass="btn btn-success btn-sm" 
-                                                        CommandName="AddCollaborator" 
-                                                        CommandArgument='<%# Eval("user_id") %>' />
-                                        </div>
-                                    </ItemTemplate>
-                                </asp:Repeater>
-                            </div>
-                        </div>
-                        <div>
-                            <asp:Label ID="SuccessMessage" runat="server" CssClass="text-success" Visible="false"></asp:Label>
-                            <asp:Label ID="ErrorMessage" runat="server" CssClass="text-danger" Visible="false"></asp:Label>
-                        </div>
-
-
-
-                    </div>
-                    <div class="modal-footer">
-                        <asp:Button ID="SaveCollaborationButton" runat="server" Text="Save" CssClass="btn btn-success" OnClick="SaveCollaborationButton_Click" />
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                    </div>
+            <!-- API Invoke Count (10% width) -->
+            <div class="col-2">
+                <div class="form-group" style="margin-top: 30px;"> <!-- Adjust margin-top to lower the box -->
+                    <label for="InvokeCount">API Invoke Count:</label>
+                    <asp:TextBox ID="InvokeCount" runat="server" CssClass="form-control white small-textbox" ReadOnly="true"></asp:TextBox>
                 </div>
             </div>
         </div>
 
         <asp:Button ID="SaveEditButton" runat="server" Text="Save Edit" CssClass="btn btn-success mt-4" Visible="false" OnClick="SaveEditButton_Click" />
-        <asp:Button ID="CancelEditButton" runat="server" Text="Cancel" CssClass="btn btn-secondary mt-4 ms-2" Visible="false" OnClick="CancelEditButton_Click" />
 
         <asp:PlaceHolder ID="ParameterPlaceholder" runat="server">
             <div class="parameter-container"  runat="server" id="test">
@@ -201,27 +143,6 @@
         </asp:PlaceHolder>
     </div>
 </div>
-
-
-    <script>
-        // Function to open the modal and set the state in local storage
-        function showCollaborationModal() {
-            $('#collaborationModal').modal('show');
-            localStorage.setItem('modalOpen', 'true');
-        }
-
-        // Event to clear the modal state when it is closed
-        $('#collaborationModal').on('hidden.bs.modal', function () {
-            localStorage.removeItem('modalOpen');
-        });
-
-        // Check local storage on page load to reopen the modal if needed
-        $(document).ready(function () {
-            if (localStorage.getItem('modalOpen') === 'true') {
-                $('#collaborationModal').modal('show');
-            }
-        });
-    </script>
 
 
     <script src="JS/viewAPI_Page.js"></script>

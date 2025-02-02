@@ -86,19 +86,8 @@
                         </li>
 
                         <li style="z-index: 100;">
-                            <a href="#" class="desktop-item">Manage API</a>
+                            <a href="ManageApp.aspx" class="desktop-item">Manage Application</a>
                              <label for="showDrop" class="mobile-item">Dropdown Menu</label>
-                             <ul class="drop-menu">
-                                 <li>
-                                     <asp:LinkButton ID="lnkOwnAPI" runat="server" CssClass="dropdown-item" OnClick="OwnAPI_Click">
-                                         Your API
-                                     </asp:LinkButton>
-                                 </li>
-                                     <asp:LinkButton ID="lnkSharedAPI" runat="server" CssClass="dropdown-item" OnClick="SharedAPI_Click">
-                                         Shared API
-                                     </asp:LinkButton>
-                                 </li>
-                             </ul>
                         </li>
                         <li>
                             <a href="CollaboratorPage.aspx" class="desktop-item">Collaborator</a>

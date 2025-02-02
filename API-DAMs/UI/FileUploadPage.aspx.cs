@@ -233,7 +233,6 @@ namespace API_DAMs.UI
         private void DynamicCodeText()
         {
             var deletedPanels = GetDeletedPanels();
-            //ViewState.Clear();
             bool shouldShowAlert = false;
             List<int> methodIndices = new List<int>();
             string codeText = HiddenFileContent.Value;
@@ -281,10 +280,10 @@ namespace API_DAMs.UI
                             int userId = Convert.ToInt32(Session["UserId"]);
                             // Check if method name already exists in the database for the current user
                             string checkApiQuery = @"
-                                SELECT COUNT(*)
-                                FROM api_methods am
-                                JOIN api_header ah ON am.code_id = ah.code_id
-                                WHERE am.API_Name = @API_Name AND ah.user_id = @UserId";
+                        SELECT COUNT(*)
+                        FROM api_methods am
+                        JOIN api_header ah ON am.code_id = ah.code_id
+                        WHERE am.API_Name = @API_Name AND ah.user_id = @UserId";
 
                             using (SqlCommand checkApiCommand = new SqlCommand(checkApiQuery, connection))
                             {
@@ -293,7 +292,6 @@ namespace API_DAMs.UI
 
                                 int count = (int)checkApiCommand.ExecuteScalar();
                             }
-
 
                             panelCreated = true;
                             methodIndices.Add(i);
@@ -312,6 +310,7 @@ namespace API_DAMs.UI
                         }
                     }
                 }
+
                 if (code_doc.Controls.OfType<Panel>().Count() == 0)
                 {
                     panelCreated = false;
@@ -326,12 +325,19 @@ namespace API_DAMs.UI
                 }
             }
             else
-            {
+            {       
                 code_doc.Visible = false;
                 btnSubmit.Visible = false;
             }
 
+            // Show alerts based on conditions
+            if (shouldShowAlert)
+            {
+                ScriptManager.RegisterStartupScript(this, GetType(), "alertMessage", "alert('Invalid method in file. Please check your file.');", true);
+                HiddenFileContent.Value = string.Empty;
+            }
         }
+
 
         protected void handleCode(object sender, EventArgs e)
         {
@@ -399,8 +405,10 @@ namespace API_DAMs.UI
             }
             else
             {
+                HiddenFileContent.Value = string.Empty;
                 FileUploadError.Text = "Please upload a file.";
                 FileUploadError.Visible = true;
+                ScriptManager.RegisterStartupScript(this, GetType(), "alertMessage", "alert('Please upload a file.');", true);
             }
         }
 
@@ -1318,7 +1326,7 @@ namespace API_DAMs.UI
                     }
 
                     // Optionally, redirect or display a success message
-                    Response.Write("<script>alert('Code details submitted successfully!');</script>");
+                    Response.Write("<script>alert('File details submitted successfully!');</script>");
                     code_doc.Visible = false;
                     btnSubmit.Visible = false;
                 }

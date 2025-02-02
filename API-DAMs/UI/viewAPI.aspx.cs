@@ -146,7 +146,7 @@ namespace API_DAMs.UI
             if (ddlApplications.SelectedValue != null && ddlApplications.SelectedValue != "0")
             {
                 // Check if "Default" is selected
-                if (ddlApplications.SelectedValue == "1")
+                if (ddlApplications.SelectedValue == "3z")
                 {
                     // Handle behavior for Default selection
                     lblHeader.Text = "Viewing Default APIs";

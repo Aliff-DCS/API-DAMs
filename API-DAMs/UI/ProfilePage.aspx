@@ -61,9 +61,9 @@
                         <li class="nav-item">
                             <a class="nav-link active" id="home-tab" data-toggle="tab" role="tab" href="#home" aria-controls="home" aria-selected="true">About</a>
                         </li>
-                        <li class="nav-item">
+<%--                        <li class="nav-item">
                             <a class="nav-link" id="profile-tab" data-toggle="tab" role="tab" href="#profile" aria-controls="profile" aria-selected="false">Graph</a>
-                        </li>
+                        </li>--%>
                     </ul>
                 </div>
             </div>

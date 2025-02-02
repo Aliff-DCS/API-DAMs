@@ -93,17 +93,17 @@ namespace API_DAMs.UI
             Response.Redirect("~/UI/ProfilePage.aspx"); // Replace with your actual profile settings page URL
         }
 
-        protected void OwnAPI_Click(object sender, EventArgs e)
-        {
-            // Redirect to the profile settings page
-            Response.Redirect("~/UI/viewAPI.aspx"); // Replace with your actual profile settings page URL
-        }
+        //protected void OwnAPI_Click(object sender, EventArgs e)
+        //{
+        //    // Redirect to the profile settings page
+        //    Response.Redirect("~/UI/viewAPI.aspx"); // Replace with your actual profile settings page URL
+        //}
 
-        protected void SharedAPI_Click(object sender, EventArgs e)
-        {
-            // Redirect to the profile settings page
-            Response.Redirect("~/UI/sharedViewAPI.aspx"); // Replace with your actual profile settings page URL
-        }
+        //protected void SharedAPI_Click(object sender, EventArgs e)
+        //{
+        //    // Redirect to the profile settings page
+        //    Response.Redirect("~/UI/sharedViewAPI.aspx"); // Replace with your actual profile settings page URL
+        //}
 
         protected void lnkCode_Click(object sender, EventArgs e)
         {

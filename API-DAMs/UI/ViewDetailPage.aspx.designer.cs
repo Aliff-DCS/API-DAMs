@@ -15,6 +15,15 @@ namespace API_DAMs.UI
     {
 
         /// <summary>
+        /// lblPerm control.
+        /// </summary>
+        /// <remarks>
+        /// Auto-generated field.
+        /// To modify move field declaration from designer file to code-behind file.
+        /// </remarks>
+        protected global::System.Web.UI.WebControls.Label lblPerm;
+
+        /// <summary>
         /// EditButton control.
         /// </summary>
         /// <remarks>
@@ -105,58 +114,13 @@ namespace API_DAMs.UI
         protected global::System.Web.UI.WebControls.TextBox Description;
 
         /// <summary>
-        /// CollaborationButton control.
+        /// InvokeCount control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Button CollaborationButton;
-
-        /// <summary>
-        /// CollaboratorRepeater control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Repeater CollaboratorRepeater;
-
-        /// <summary>
-        /// FriendsRepeater control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Repeater FriendsRepeater;
-
-        /// <summary>
-        /// SuccessMessage control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label SuccessMessage;
-
-        /// <summary>
-        /// ErrorMessage control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Label ErrorMessage;
-
-        /// <summary>
-        /// SaveCollaborationButton control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button SaveCollaborationButton;
+        protected global::System.Web.UI.WebControls.TextBox InvokeCount;
 
         /// <summary>
         /// SaveEditButton control.
@@ -166,15 +130,6 @@ namespace API_DAMs.UI
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
         protected global::System.Web.UI.WebControls.Button SaveEditButton;
-
-        /// <summary>
-        /// CancelEditButton control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.Button CancelEditButton;
 
         /// <summary>
         /// ParameterPlaceholder control.

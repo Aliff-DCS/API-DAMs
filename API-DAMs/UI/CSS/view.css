@@ -46,9 +46,9 @@
 }
 
 hr {
-    border: 0;
+    border: 0 solid black;
     height: 1px;
-    background-color: #ccc;
+    background-color: black;
     margin: 0; /* Adjust margin if required */
 }
 

@@ -31,13 +31,28 @@ namespace API_DAMs.UI
                 if (!string.IsNullOrEmpty(apiId))
                 {
                     // Check edit permissions
-                    bool canEdit = await CanEditApiAsync(apiId, currentUserId);
-                    EditButton.Visible = canEdit;
+                    string permission = await GetUserPermissionAsync(apiId, currentUserId);
+                    EditButton.Visible = permission != "No Permission"; // Show edit button if user has permission
+
+                    // Display the permission in the label
+                    switch (permission)
+                    {
+                        case "Owner":
+                            lblPerm.Text = "You are the owner of this API.";
+                            break;
+                        case "Write":
+                            lblPerm.Text = "You have write permissions for this API.";
+                            break;
+                        case "Admin":
+                            lblPerm.Text = "You have admin permissions for this API.";
+                            break;
+                        default:
+                            lblPerm.Text = "You have read permissions for this API.";
+                            break;
+                    }
 
                     // Load API Details
                     await LoadAPIDetailsAsync(apiId);
-                    LoadFriendsList();
-                    collaboratorList();
                 }
                 else
                 {
@@ -54,6 +69,63 @@ namespace API_DAMs.UI
             }
         }
 
+        private async Task<string> GetUserPermissionAsync(string apiId, int currentUserId)
+        {
+            string permission = "No Permission";
+
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                // Query to check ownership or permissions
+                string query = @"
+            SELECT 
+                CASE 
+                    WHEN ah.user_id = @currentUserId THEN 'Owner'
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM collaborator c 
+                        WHERE c.app_id = am.app_id 
+                          AND c.shared_id = @currentUserId 
+                          AND c.collab_permission = 'write'
+                    ) THEN 'Write'
+                    WHEN EXISTS (
+                        SELECT 1 
+                        FROM collaborator c 
+                        WHERE c.app_id = am.app_id 
+                          AND c.shared_id = @currentUserId 
+                          AND c.collab_permission = 'admin'
+                    ) THEN 'Admin'
+                    ELSE 'No Permission'
+                END AS UserPermission
+            FROM api_methods am
+            INNER JOIN api_header ah ON am.code_id = ah.code_id
+            WHERE am.API_id = @apiId;";
+
+                SqlCommand command = new SqlCommand(query, connection);
+                command.Parameters.AddWithValue("@apiId", apiId);
+                command.Parameters.AddWithValue("@currentUserId", currentUserId);
+
+                try
+                {
+                    await connection.OpenAsync();
+                    object result = await command.ExecuteScalarAsync();
+
+                    if (result != null && result != DBNull.Value)
+                    {
+                        permission = result.ToString();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log the exception or handle it as necessary
+                    Console.WriteLine(ex.Message);
+                }
+            }
+
+            return permission;
+        }
+
         private async Task<bool> CanEditApiAsync(string apiId, int currentUserId)
         {
             bool canEdit = false;
@@ -64,21 +136,21 @@ namespace API_DAMs.UI
             {
                 // Query to check ownership or permissions
                 string query = @"
-            SELECT 
-                CASE 
-                    WHEN ah.user_id = @currentUserId THEN 1
-                    WHEN EXISTS (
-                        SELECT 1 
-                        FROM collaborator c 
-                        WHERE c.API_id = am.API_id 
-                          AND c.shared_id = @currentUserId 
-                          AND c.collab_permission IN ('write', 'admin')
-                    ) THEN 1
-                    ELSE 0
-                END AS CanEdit
-            FROM api_methods am
-            INNER JOIN api_header ah ON am.code_id = ah.code_id
-            WHERE am.API_id = @apiId";
+                        SELECT 
+                            CASE 
+                                WHEN ah.user_id = @currentUserId THEN 1
+                                WHEN EXISTS (
+                                    SELECT 1 
+                                    FROM collaborator c 
+                                    WHERE c.app_id = am.app_id 
+                                      AND c.shared_id = @currentUserId 
+                                      AND c.collab_permission IN ('write', 'admin')
+                                ) THEN 1
+                                ELSE 0
+                            END AS CanEdit
+                        FROM api_methods am
+                        INNER JOIN api_header ah ON am.code_id = ah.code_id
+                        WHERE am.API_id = @apiId;";
 
                 SqlCommand command = new SqlCommand(query, connection);
                 command.Parameters.AddWithValue("@apiId", apiId);
@@ -104,307 +176,6 @@ namespace API_DAMs.UI
             return canEdit;
         }
 
-
-        // Method to get the list of friends of the currently logged-in user
-        private void LoadFriendsList()
-        {
-            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
-
-            // Retrieve the logged-in user's ID from the session
-            string currentID = Session["UserID"]?.ToString();
-            string apiId = Request.QueryString["apiId"];
-
-            if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
-            {
-                // Redirect if the session is null or the API ID is missing
-                Response.Redirect("~/UI/SignInPage.aspx");
-                return;
-            }
-
-            // Fetch the list of friends (those who have a friendship with the logged-in user)
-            string query = @"
-                 SELECT 
-                    u.user_id,
-                    u.user_username
-                FROM users u
-                INNER JOIN friends c 
-                    ON (u.user_id = c.initiator_id AND c.receiver_id = @UserId)
-                    OR (u.user_id = c.receiver_id AND c.initiator_id = @UserId)
-                WHERE 
-                    u.user_visibility = 1 
-                    AND c.friend_status = 1
-                    AND NOT EXISTS (
-                        SELECT 1 
-                        FROM collaborator col 
-                        WHERE col.shared_id = u.user_id 
-                        AND col.API_id = @ApiId);";
-
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-
-                    cmd.Parameters.AddWithValue("@UserId", currentID);
-                    cmd.Parameters.AddWithValue("@ApiId", apiId);
-
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-
-                    if (dt.Rows.Count == 0)
-                    {
-                        // Log or display a message for debugging
-                        Console.WriteLine("No data returned from query.");
-                    }
-
-
-                    // Bind the data to the Repeater
-                    FriendsRepeater.DataSource = dt;
-                    FriendsRepeater.DataBind();
-                }
-            }
-        }
-        
-        protected void FriendsRepeater_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            if (e.CommandName == "AddCollaborator")
-            {
-                string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
-
-                // Retrieve the logged-in user's ID from the session
-                string currentID = Session["UserID"]?.ToString();
-                string apiId = Request.QueryString["apiId"];
-
-                if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
-                {
-                    // Redirect if the session is null or the API ID is missing
-                    Response.Redirect("~/UI/SignInPage.aspx");
-                    return;
-                }
-
-                // Get the friend's ID from the CommandArgument
-                string friendId = e.CommandArgument.ToString();
-
-                // Insert the friend as a collaborator
-                string query = @"
-                    INSERT INTO collaborator (collab_permission, collab_date, API_id, owner_id, shared_id)
-                    VALUES ('Read', GETDATE(), @ApiId, @OwnerId, @SharedId);";
-
-                try
-                {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        using (SqlCommand cmd = new SqlCommand(query, conn))
-                        {
-                            cmd.Parameters.AddWithValue("@ApiId", apiId);
-                            cmd.Parameters.AddWithValue("@OwnerId", currentID);
-                            cmd.Parameters.AddWithValue("@SharedId", friendId);
-
-                            conn.Open();
-                            cmd.ExecuteNonQuery();
-                        }
-                    }
-
-                    // Show success message
-                    SuccessMessage.Visible = true;
-                    SuccessMessage.Text = "Collaborator added successfully!";
-                }
-                catch (Exception ex)
-                {
-                    // Log the error or handle it appropriately
-                    ErrorMessage.Visible = true;
-                    ErrorMessage.Text = "An error occurred: " + ex.Message;
-                }
-
-                // Refresh the friends list to update the UI
-                LoadFriendsList();
-                collaboratorList();
-            }
-        }
-
-        private void collaboratorList()
-        {
-            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
-
-            // Retrieve the logged-in user's ID from the session
-            string currentID = Session["UserID"]?.ToString();
-            string apiId = Request.QueryString["apiId"];
-
-            if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
-            {
-                // Redirect if the session is null or the API ID is missing
-                Response.Redirect("~/UI/SignInPage.aspx");
-                return;
-            }
-
-            // Fetch collaborator data
-            string query = @"
-                SELECT 
-                    u.user_username AS CollaboratorName, 
-                    c.collab_permission AS Permission,
-                    c.collab_date AS CollaborationDate
-                FROM 
-                    collaborator c
-                JOIN 
-                    users u ON c.shared_id = u.user_id
-                WHERE 
-                    c.owner_id = @OwnerId AND 
-                    c.API_id = @ApiId;";
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    // Add parameters to the query
-                    cmd.Parameters.AddWithValue("@OwnerId", currentID);
-                    cmd.Parameters.AddWithValue("@ApiId", apiId);
-
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    DataTable dt = new DataTable();
-                    da.Fill(dt);
-
-                    // Bind the data to the Repeater
-                    CollaboratorRepeater.DataSource = dt;
-                    CollaboratorRepeater.DataBind();
-                }
-            }
-        }
-
-        protected void rptResults_ItemCommand(object source, RepeaterCommandEventArgs e)
-        {
-            if (e.CommandName == "Edit")
-            {
-                // Enable editing mode
-                var ddlPermission = (DropDownList)e.Item.FindControl("ddlPermission");
-                var lblPermission = (Label)e.Item.FindControl("lblPermission");
-                var btnEdit = (Button)e.Item.FindControl("btnEdit");
-                var btnSave = (Button)e.Item.FindControl("btnSave");
-                var btnCancel = (Button)e.Item.FindControl("btnCancel");
-                var btnRemove = (Button)e.Item.FindControl("btnRemove");
-
-                lblPermission.Visible = false;
-                ddlPermission.Visible = true;
-                btnEdit.Visible = false;
-                btnSave.Visible = true;
-                btnCancel.Visible = true;
-                btnRemove.Visible = true;
-            }
-            else if (e.CommandName == "Cancel")
-            {
-                // Disable editing mode
-                var ddlPermission = (DropDownList)e.Item.FindControl("ddlPermission");
-                var lblPermission = (Label)e.Item.FindControl("lblPermission");
-                var btnEdit = (Button)e.Item.FindControl("btnEdit");
-                var btnSave = (Button)e.Item.FindControl("btnSave");
-                var btnCancel = (Button)e.Item.FindControl("btnCancel");
-                var btnRemove = (Button)e.Item.FindControl("btnRemove");
-
-                lblPermission.Visible = true;
-                ddlPermission.Visible = false;
-                btnEdit.Visible = true;
-                btnSave.Visible = false;
-                btnCancel.Visible = false;
-                btnRemove.Visible = false;
-            }
-            else if (e.CommandName == "Save")
-            {
-                // Save the updated permission
-                var ddlPermission = (DropDownList)e.Item.FindControl("ddlPermission");
-                string newPermission = ddlPermission.SelectedValue;
-                string collaboratorName = e.CommandArgument.ToString();
-
-                // Call method to update the database
-                UpdateCollaboratorPermission(collaboratorName, newPermission);
-
-                // Refresh the Repeater to show updated data
-                collaboratorList();
-            }
-            else if (e.CommandName == "Remove")
-            {
-                // Remove the collaborator
-                string collaboratorName = e.CommandArgument.ToString();
-
-                // Call method to remove the collaborator from the database
-                RemoveCollaborator(collaboratorName);
-
-                // Refresh the Repeater to reflect changes
-                collaboratorList();
-            }
-        }
-
-        private void RemoveCollaborator(string collaboratorName)
-        {
-            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
-
-            string query = @"
-        DELETE FROM collaborator
-        WHERE shared_id = (SELECT user_id FROM users WHERE user_username = @CollaboratorName)
-        AND owner_id = @OwnerId AND API_id = @ApiId;";
-
-            string currentID = Session["UserID"]?.ToString();
-            string apiId = Request.QueryString["apiId"];
-
-            if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
-            {
-                // Redirect if the session is null or the API ID is missing
-                Response.Redirect("~/UI/SignInPage.aspx");
-                return;
-            }
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@CollaboratorName", collaboratorName);
-                    cmd.Parameters.AddWithValue("@OwnerId", currentID);
-                    cmd.Parameters.AddWithValue("@ApiId", apiId);
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
-            collaboratorList(); // Refresh the Collaborator list to reflect changes
-            LoadFriendsList();
-        }
-
-        // Method to update permission in the database
-        private void UpdateCollaboratorPermission(string collaboratorName, string newPermission)
-        {
-            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
-
-            string query = @"
-    UPDATE c
-    SET c.collab_permission = @NewPermission
-    FROM collaborator c
-    JOIN users u ON c.shared_id = u.user_id
-    WHERE u.user_username = @CollaboratorName AND c.owner_id = @OwnerId AND c.API_id = @ApiId;";
-
-            string currentID = Session["UserID"]?.ToString();
-            string apiId = Request.QueryString["apiId"];
-
-            if (string.IsNullOrEmpty(currentID) || string.IsNullOrEmpty(apiId))
-            {
-                // Redirect if the session is null or the API ID is missing
-                Response.Redirect("~/UI/SignInPage.aspx");
-                return;
-            }
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                using (SqlCommand cmd = new SqlCommand(query, conn))
-                {
-                    cmd.Parameters.AddWithValue("@NewPermission", newPermission);
-                    cmd.Parameters.AddWithValue("@CollaboratorName", collaboratorName);
-                    cmd.Parameters.AddWithValue("@OwnerId", currentID);
-                    cmd.Parameters.AddWithValue("@ApiId", apiId);
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-                }
-            }
-        }
-
         protected void EditButton_Click(object sender, EventArgs e)
         {
             // Enable all TextBoxes for editing (static ones)
@@ -415,15 +186,10 @@ namespace API_DAMs.UI
             PostMethodText.ReadOnly = false;
             JSONMethodText.ReadOnly = false;
             Description.ReadOnly = false;
-            CollaborationButton.Visible= false;
-            CancelEditButton.Visible = true;
-
-
-            // Show the "Save Edit" button
-            SaveEditButton.Visible = true;
 
             // Hide the ParameterPlaceholder
             ParameterPlaceholder.Visible = false;
+            SaveEditButton.Visible = true;
         }
 
         protected void CancelEditButton_Click(object sender, EventArgs e)
@@ -437,34 +203,10 @@ namespace API_DAMs.UI
             JSONMethodText.ReadOnly = true;
             Description.ReadOnly = true;
 
-            // Hide the "Save Edit" and "Cancel" buttons
-            SaveEditButton.Visible = false;
-            CancelEditButton.Visible = false;
-
             // Show the ParameterPlaceholder and other UI elements again
             ParameterPlaceholder.Visible = true;
-            CollaborationButton.Visible = true;
-
-            // Optionally, reset the TextBox values to their original state if needed
-            //LoadOriginalAPIValues();
+            SaveEditButton.Visible = false;
         }
-
-        //private void LoadOriginalAPIValues()
-        //{
-        //    string apiId = Request.QueryString["apiId"];
-        //    if (!string.IsNullOrEmpty(apiId))
-        //    {
-        //        // Fetch the original data from the database and set the TextBox values
-        //        //var apiData = GetAPIDataFromDatabase(apiId);
-        //        API_Name.Text = apiData.Name;
-        //        Endpoint.Text = apiData.Endpoint;
-        //        Param_req.Text = apiData.ParamRequired;
-        //        Method_Type.Text = apiData.MethodType;
-        //        PostMethodText.Text = apiData.PostMethodText;
-        //        JSONMethodText.Text = apiData.JSONMethodText;
-        //        Description.Text = apiData.Description;
-        //    }
-        //}
 
         protected void SaveEditButton_Click(object sender, EventArgs e)
         {
@@ -484,14 +226,10 @@ namespace API_DAMs.UI
                 PostMethodText.ReadOnly = true;
                 JSONMethodText.ReadOnly = true;
                 Description.ReadOnly = true;
-                CancelEditButton.Visible = false;
-
-                // Hide the "Save Edit" button after saving
-                SaveEditButton.Visible = false;
 
                 // Show the ParameterPlaceholder again after saving
                 ParameterPlaceholder.Visible = true;
-                CollaborationButton.Visible = true;
+                SaveEditButton.Visible = false;
             }
         }
 
@@ -597,11 +335,30 @@ WHERE API_id = @API_ID";
             }
         }
 
+        private async Task IncrementInvokeCountAsync(string apiId)
+        {
+            string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
+            string query = @"
+                UPDATE api_methods
+                SET API_invoke_count = API_invoke_count + 1
+                WHERE API_id = @API_ID";
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@API_ID", apiId);
+                    await conn.OpenAsync();
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+        }
+
         private async Task LoadAPIDetailsAsync(string apiId)
         {
             string connectionString = ConfigurationManager.ConnectionStrings["MyDbContext"].ConnectionString;
             string query = @"
-        SELECT API_name, API_endpoint, API_desc AS Description, API_returnType, API_HTTP_method AS HTTP_Method, API_post_method AS POST_Method
+        SELECT API_name, API_endpoint, API_desc AS Description, API_returnType, API_HTTP_method AS HTTP_Method, API_post_method AS POST_Method, API_invoke_count
         FROM api_methods 
         WHERE API_id = @API_ID";
 
@@ -626,6 +383,7 @@ WHERE API_id = @API_ID";
                             Endpoint.Text = reader["API_endpoint"].ToString();
                             Description.Text = reader["Description"].ToString();
                             Method_Type.Text = reader["HTTP_Method"].ToString();
+                            InvokeCount.Text = reader["API_invoke_count"].ToString(); // Display the invoke count
 
                             string methodType = reader["HTTP_Method"].ToString();
                             string postMethod = reader["POST_Method"].ToString();
@@ -635,6 +393,9 @@ WHERE API_id = @API_ID";
 
                             if (methodType.Equals("GET", StringComparison.OrdinalIgnoreCase))
                             {
+                                // Increment the invoke count for GET requests
+                                await IncrementInvokeCountAsync(apiId);
+
                                 LoadParameterDetails(apiId);
                                 if (endpoint.Contains("{"))
                                 {
@@ -695,48 +456,7 @@ WHERE API_id = @API_ID";
             }
         }
 
-        private void GenerateParameterInputsPOST(string apiId, string endpoint)
-        {
-            // Clear existing controls if any
-            ParameterPlaceholder.Controls.Clear();
-            Output.Visible = false;
-
-            // Create a container div for styling purposes
-            var containerDiv = new Panel
-            {
-                CssClass = "parameter-container border p-3" // Add custom and Bootstrap classes
-            };
-
-            // Add the header
-            var header = new LiteralControl("<h4 class='mb-3 text-center custom-header'>Please insert the JSON String here:</h4>");
-            containerDiv.Controls.Add(header);
-
-            // Create a multiline TextBox for JSON input
-            var jsonInputTextBox = new TextBox
-            {
-                ID = "JsonInputTextBox",
-                TextMode = TextBoxMode.MultiLine,
-                CssClass = "form-control", // Add Bootstrap form-control class for styling
-                Rows = 10, // Set the number of rows for the TextBox
-                Columns = 50 // Set the number of columns for the TextBox
-            };
-            containerDiv.Controls.Add(jsonInputTextBox);
-
-            // Optionally, add a button to submit the JSON string
-            var submitButton = new Button
-            {
-                ID = "SubmitJsonButton",
-                Text = "Submit JSON",
-                CssClass = "btn btn-primary mt-3" // Add Bootstrap button classes for styling
-            };
-            submitButton.Click += SubmitJsonButton_Click; // Event handler for processing the JSON input
-            containerDiv.Controls.Add(submitButton);
-            containerDiv.Controls.Add(Output);
-
-            // Add the container to the placeholder
-            ParameterPlaceholder.Controls.Add(containerDiv);
-
-        }
+        
 
         protected async void SubmitJsonButton_Click(object sender, EventArgs e)
         {
@@ -756,6 +476,17 @@ WHERE API_id = @API_ID";
                 // Display the result in the output control
                 Output.Visible = true;
                 Output.Text = FormatJsonOutput(result);
+
+                // Increment the API Invoke Count
+                string apiId = Request.QueryString["apiId"]; // Get the API ID from the query string
+                
+
+                if (!string.IsNullOrEmpty(apiId))
+                {
+                    await IncrementInvokeCountAsync(apiId);
+                    // Update the UI with the new invoke count
+                    await LoadAPIDetailsAsync(apiId);
+                }
             }
             else
             {
@@ -962,6 +693,49 @@ WHERE API_id = @API_ID";
             }
         }
 
+        private void GenerateParameterInputsPOST(string apiId, string endpoint)
+        {
+            // Clear existing controls if any
+            ParameterPlaceholder.Controls.Clear();
+            Output.Visible = false;
+
+            // Create a container div for styling purposes
+            var containerDiv = new Panel
+            {
+                CssClass = "parameter-container border p-3" // Add custom and Bootstrap classes
+            };
+
+            // Add the header
+            var header = new LiteralControl("<h4 class='mb-3 text-center custom-header'>Please insert the JSON String here:</h4>");
+            containerDiv.Controls.Add(header);
+
+            // Create a multiline TextBox for JSON input
+            var jsonInputTextBox = new TextBox
+            {
+                ID = "JsonInputTextBox",
+                TextMode = TextBoxMode.MultiLine,
+                CssClass = "form-control", // Add Bootstrap form-control class for styling
+                Rows = 10, // Set the number of rows for the TextBox
+                Columns = 50 // Set the number of columns for the TextBox
+            };
+            containerDiv.Controls.Add(jsonInputTextBox);
+
+            // Optionally, add a button to submit the JSON string
+            var submitButton = new Button
+            {
+                ID = "SubmitJsonButton",
+                Text = "Submit JSON",
+                CssClass = "btn btn-primary mt-3" // Add Bootstrap button classes for styling
+            };
+            submitButton.Click += SubmitJsonButton_Click; // Event handler for processing the JSON input
+            containerDiv.Controls.Add(submitButton);
+            containerDiv.Controls.Add(Output);
+
+            // Add the container to the placeholder
+            ParameterPlaceholder.Controls.Add(containerDiv);
+
+        }
+
         private async Task SubmitButton_Click(object sender, EventArgs e, string endpointTemplate)
         {
             var parameters = new Dictionary<string, string>();
@@ -973,7 +747,6 @@ WHERE API_id = @API_ID";
                 // Use recursive method to traverse all controls
                 TraverseControls(containerDiv, parameters);
             }
-
 
             string finalEndpoint = ReplaceParametersInEndpoint(endpointTemplate, parameters);
 
@@ -1006,6 +779,16 @@ WHERE API_id = @API_ID";
 
             Output.Visible = true;
             Output.Text = formattedJson;
+
+            // Increment the API Invoke Count
+            string apiId = Request.QueryString["apiId"]; // Get the API ID from the query string
+            if (!string.IsNullOrEmpty(apiId))
+            {
+                await IncrementInvokeCountAsync(apiId);
+
+                // Update the UI with the new invoke count
+                //await LoadAPIDetailsAsync(apiId);
+            }
         }
 
         private async Task<string> PostJsonStringForAPI(string apiEndpoint, Dictionary<string, string> parameters)
@@ -1093,6 +876,7 @@ WHERE API_id = @API_ID";
                 }
             }
         }
+
         protected void SaveCollaborationButton_Click(object sender, EventArgs e)
         {
             // Hardcoded names and permissions for demonstration

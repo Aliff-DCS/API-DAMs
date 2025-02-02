@@ -5,6 +5,7 @@
     
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/2.1.8/js/dataTables.bootstrap5.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <link href="CSS/view.css" rel="stylesheet" />
 <style>
@@ -30,7 +31,7 @@
 </style>
     
     <div class="container nav-spacer">
-        <h2 class="text-center ">Find collaborator</h2>
+        <h2 class="text-center ">Find friends</h2>
        <asp:Repeater ID="rptResults" runat="server" OnItemCommand="rptResults_ItemCommand" OnItemDataBound="rptResults_ItemDataBound">
         <HeaderTemplate>
             <table id="example" class="table table-striped" style="width:100%">
@@ -75,4 +76,5 @@
 
     </div>
     <script src="JS/viewAPI_Page.js"></script>
+    <script>new DataTable('#example');</script>
 </asp:Content>

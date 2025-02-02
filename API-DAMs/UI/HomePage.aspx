@@ -130,7 +130,7 @@ code {
                     <div class="col-md-3">
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title">Shared APIs</h5>
+                                <h5 class="card-title">APIs shared to me</h5>
                                 <h2 class="card-text">
                                     <asp:Label ID="lblSharedAPIs" runat="server" CssClass="h2"></asp:Label>
                                 </h2>

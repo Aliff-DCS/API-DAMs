@@ -72,7 +72,7 @@ namespace API_DAMs.UI
 
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = "SELECT user_id, user_username, user_email, user_phone, user_name, user_image, user_joined_date, user_visibility, user_tagline FROM users WHERE user_username = @Username";
+                string query = "SELECT user_id, user_username, user_email, user_phone, user_name, user_image, user_joined_date, user_visibility, user_desc, user_tagline FROM users WHERE user_username = @Username";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
@@ -89,6 +89,7 @@ namespace API_DAMs.UI
                         litName.Text = reader["user_name"].ToString();
                         litPhone.Text = reader["user_phone"].ToString();
                         litJD.Text = reader["user_joined_date"].ToString();
+                        txtUserDesc.Value = reader["user_desc"].ToString();
 
                         // Assign the tagline value
                         if (reader["user_tagline"] != DBNull.Value && !string.IsNullOrEmpty(reader["user_tagline"].ToString()))
